@@ -50,11 +50,11 @@ const selecionada = (d, f) => modelo.value?.data === d.data && modelo.value?.fai
 .escolha { display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow: auto; }
 .dia { display: grid; grid-template-columns: 90px repeat(4, 1fr); gap: 6px; align-items: stretch; }
 .rotulo { font-size: 12px; display: flex; flex-direction: column; justify-content: center; text-transform: capitalize; }
-.faixa { border: 1px solid #b9dcc6; background: #effaf3; border-radius: 6px; padding: 5px 4px; cursor: pointer; display: flex; flex-direction: column; font: inherit; font-size: 12px; }
+.faixa { border: 1px solid var(--gc-pill-ok-border); background: var(--gc-toast-ok-bg); color: var(--gc-heading); border-radius: 6px; padding: 5px 4px; cursor: pointer; display: flex; flex-direction: column; font: inherit; font-size: 12px; }
 .faixa small { color: var(--cor-texto-suave); }
-.faixa.cheia { border-color: #f0c2c2; background: #fdf1f1; }
-.faixa.atual { border-style: dashed; background: #f3f5f8; }
-.faixa.sel { outline: 2px solid var(--cor-primaria, #0b4f8a); background: #e5effa; }
+.faixa.cheia { border-color: var(--gc-toast-error-border); background: var(--gc-toast-error-bg); }
+.faixa.atual { border-style: dashed; background: var(--gc-input-disabled); }
+.faixa.sel { outline: 2px solid var(--gc-blue-700); background: var(--gc-toast-info-bg); }
 .faixa:disabled { cursor: not-allowed; opacity: 0.55; }
 @media (max-width: 560px) { .dia { grid-template-columns: 1fr 1fr; } .rotulo { grid-column: span 2; flex-direction: row; gap: 4px; } }
 </style>

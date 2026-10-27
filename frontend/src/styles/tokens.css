@@ -1,0 +1,81 @@
+/*
+ * Paleta do Gestão CD, 1:1.
+ * Fonte: cloudflare-worker do Gestão CD
+ *   - src/index.ts  → :root base (--blue-950/900/700, --red-600, --yellow-400, --ok…), toasts .atlas-toast,
+ *                     status do agendamento (.agendado, .confirmado…), legenda do gráfico, .danger-link
+ *   - src/styles/atlas-theme.css (#atlas-ui.atlas-theme) → casca Slate: topo, menu, fundo, painéis,
+ *                     bordas, tabelas, campos, botões, login
+ *   - manifest do worker → theme_color #020617, background_color #f8fafc
+ */
+:root {
+  /* marca (index.ts :root) */
+  --gc-blue-950: #061d37;
+  --gc-blue-900: #073b73;
+  --gc-blue-700: #0b63b5;          /* azul do sistema (primário, links) */
+  --gc-red-600: #d71920;
+  --gc-yellow-400: #ffd21f;
+  --gc-ok: #148a42;
+
+  /* casca Slate (atlas-theme) */
+  --gc-topbar-bg: #020617;         /* slate-950: #app-topbar, #erp-sidebar, thead, botões padrão */
+  --gc-topbar-border: #1e293b;     /* slate-800 */
+  --gc-topbar-text: #f8fafc;
+  --gc-topbar-control-border: #334155;
+  --gc-topbar-hover: #1e293b;      /* --shell-button-hover */
+  --gc-sidebar-active: #1e293b;    /* .is-active-route bg-slate-800 */
+  --gc-sidebar-text: #f1f5f9;      /* text-slate-100 */
+  --gc-tab-text: #cbd5e1;
+  --gc-bg: #f8fafc;                /* .main bg-slate-50 */
+  --gc-panel: #ffffff;
+  --gc-border: #e2e8f0;            /* slate-200 */
+  --gc-border-strong: #cbd5e1;     /* slate-300 (campos) */
+  --gc-zebra: #f8fafc;             /* slate-50 (tfoot / readonly) */
+  --gc-hover-row: #f1f5f9;         /* slate-100 */
+  --gc-text: #334155;              /* slate-700 */
+  --gc-heading: #0f172a;           /* slate-900 */
+  --gc-muted: #64748b;             /* slate-500 */
+  --gc-placeholder: #94a3b8;       /* slate-400 */
+  --gc-input-bg: #f8fafc;          /* .atlas-input / personalização bg-slate-50 */
+  --gc-input-disabled: #f1f5f9;
+  --gc-focus: #020617;             /* focus border slate-950 */
+  --gc-focus-ring: rgba(2, 6, 23, .15);
+  --gc-login-accent: #991b1b;      /* botão e foco do login */
+  --gc-login-hero: #0f172a;
+
+  /* botões */
+  --gc-btn-confirm: #148a42;       /* --ok */
+  --gc-btn-confirm-hover: #166534;
+  --gc-btn-danger: #ef4444;        /* .danger-link */
+  --gc-btn-danger-hover: #dc2626;  /* .danger-link:hover */
+  --gc-btn-danger-text: #ffffff;
+  --gc-btn-secondary-bg: #ffffff;  /* .btn.secondary */
+  --gc-btn-secondary-border: #e2e8f0;
+  --gc-btn-secondary-text: #334155;
+
+  /* toasts (.atlas-toast) */
+  --gc-toast-info-bg: #eff6ff;  --gc-toast-info-text: #1e3a8a;  --gc-toast-info-border: #bfdbfe;  --gc-toast-info-accent: #2563eb;
+  --gc-toast-ok-bg: #f0fdf4;    --gc-toast-ok-text: #14532d;    --gc-toast-ok-border: #bbf7d0;    --gc-toast-ok-accent: #16a34a;
+  --gc-toast-warn-bg: #fffbeb;  --gc-toast-warn-text: #78350f;  --gc-toast-warn-border: #fde68a;  --gc-toast-warn-accent: #d97706;
+  --gc-toast-error-bg: #fef2f2; --gc-toast-error-text: #7f1d1d; --gc-toast-error-border: #fecaca; --gc-toast-error-accent: #dc2626;
+
+  /* status do agendamento (index.ts) */
+  --gc-st-agendado-bg: #e0f2fe;       --gc-st-agendado: #075985;
+  --gc-st-confirmado-bg: #dbeafe;     --gc-st-confirmado: #1e40af;
+  --gc-st-chegou-bg: #fef9c3;         --gc-st-chegou: #854d0e;
+  --gc-st-em-recebimento-bg: #ffedd5; --gc-st-em-recebimento: #9a3412;
+  --gc-st-recebido-bg: #dcfce7;       --gc-st-recebido: #166534;
+  --gc-st-cancelado-bg: #fee2e2;      --gc-st-cancelado: #991b1b;
+  --gc-st-nao-compareceu-bg: #f1f5f9; --gc-st-nao-compareceu: #475569;
+
+  /* pílulas ok / aviso / perigo (index.ts .ok / .warn / .danger) */
+  --gc-pill-ok-bg: #dcfce7;     --gc-pill-ok: #166534;     --gc-pill-ok-border: #86efac;
+  --gc-pill-warn-bg: #fef3c7;   --gc-pill-warn: #92400e;   --gc-pill-warn-border: #fde68a;
+  --gc-pill-danger-bg: #fee2e2; --gc-pill-danger: #991b1b; --gc-pill-danger-border: #fca5a5;
+
+  /* gráficos (home-chart-legend / conic-gradient; barras .tms-live-chart-bars) */
+  --gc-chart-1: #2563eb;
+  --gc-chart-2: #f59e0b;
+  --gc-chart-ok: #10b981;
+  --gc-chart-track: #e2e8f0;
+  --gc-chart-danger: #dc2626;
+}

@@ -144,6 +144,6 @@ defineExpose({ abrir, confirmar, dlg, erro })
 
 <style scoped>
 .abas { display: flex; gap: 4px; margin-bottom: 10px; }
-.abas button { border: 1px solid var(--cor-borda, #d9dee5); background: #fff; padding: 7px 14px; border-radius: var(--raio, 6px); cursor: pointer; font: inherit; }
-.abas button.ativa { background: var(--cor-primaria, #0b4f8a); color: #fff; border-color: transparent; }
+.abas button { border: 1px solid var(--gc-border); background: var(--gc-panel); color: var(--gc-text); padding: 7px 14px; border-radius: var(--raio, 6px); cursor: pointer; font: inherit; }
+.abas button.ativa { background: var(--gc-topbar-bg); color: var(--gc-panel); border-color: transparent; }
 </style>

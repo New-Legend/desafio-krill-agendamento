@@ -51,11 +51,11 @@ onMounted(carregar)
 <style scoped>
 .filtros-inline { display: flex; gap: 10px; align-items: flex-end; }
 .rotina { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
-.item { margin: 0; border-left: 4px solid var(--cor-borda, #d9dee5); }
-.item.nivel-erro { border-left-color: #d64545; }
-.item.nivel-aviso { border-left-color: #e0a31a; }
-.item.nivel-info { border-left-color: #3b82c4; }
-.item.ok { border-left-color: #3aa76d; }
+.item { margin: 0; border-left: 4px solid var(--gc-border); }
+.item.nivel-erro { border-left-color: var(--gc-toast-error-accent); }
+.item.nivel-aviso { border-left-color: var(--gc-toast-warn-accent); }
+.item.nivel-info { border-left-color: var(--gc-toast-info-accent); }
+.item.ok { border-left-color: var(--gc-toast-ok-accent); }
 .item h2 { font-size: 14px; display: flex; gap: 6px; align-items: center; }
 .contador { font-size: 20px; }
 .item ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }

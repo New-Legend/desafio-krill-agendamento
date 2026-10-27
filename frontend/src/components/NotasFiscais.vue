@@ -96,8 +96,8 @@ defineExpose({ importar, excluir, carregar })
 
 <style scoped>
 .nfe { margin: 12px 0 0; background: var(--cor-fundo); }
-.avisos { margin: 0 0 8px; padding-left: 0; list-style: none; font-size: 13px; color: #8a5a00; }
-.nota { border: 1px solid var(--cor-linha, #e3e7ec); border-radius: 6px; background: #fff; margin-top: 6px; }
+.avisos { margin: 0 0 8px; padding-left: 0; list-style: none; font-size: 13px; color: var(--gc-pill-warn); }
+.nota { border: 1px solid var(--gc-border); border-radius: 8px; background: var(--gc-panel); margin-top: 6px; }
 .nota-cab { all: unset; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 10px; cursor: pointer; font-size: 13px; width: calc(100% - 20px); }
 .nota-corpo { padding: 0 10px 8px; }
 .chave { display: block; margin-bottom: 6px; word-break: break-all; }

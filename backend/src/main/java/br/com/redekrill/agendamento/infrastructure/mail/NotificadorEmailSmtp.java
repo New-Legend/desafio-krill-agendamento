@@ -36,7 +36,7 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
     public void enviarConfirmacao(AgendamentoDetalhe d, String linkFornecedor) {
         Agendamento a = d.agendamento();
         enviar(a.getEmailFornecedor(), "Agendamento de entrega confirmado — Pedido " + a.getIdPedido(),
-                "Agendamento de entrega confirmado", d, "#0f7b3f", linkFornecedor);
+                "Agendamento de entrega confirmado", d, "#148a42", linkFornecedor);
     }
 
     @Async
@@ -44,7 +44,7 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
     public void enviarCancelamento(AgendamentoDetalhe d) {
         Agendamento a = d.agendamento();
         enviar(a.getEmailFornecedor(), "Agendamento de entrega cancelado — Pedido " + a.getIdPedido(),
-                "Agendamento de entrega cancelado", d, "#b42318", null);
+                "Agendamento de entrega cancelado", d, "#dc2626", null);
     }
 
     private void enviar(String para, String assunto, String titulo, AgendamentoDetalhe d, String cor, String link) {
@@ -66,7 +66,8 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
     static String html(String titulo, AgendamentoDetalhe d, String cor, String link) {
         Agendamento a = d.agendamento();
         StringBuilder sb = new StringBuilder();
-        sb.append("<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#0f172a\">")
+        sb.append("<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#334155\">")
+                .append("<div style=\"background:#020617;height:6px;border-bottom:2px solid #ffd21f\"></div>")
                 .append("<img src=\"cid:logo\" alt=\"Rede Krill\" width=\"90\" height=\"83\" style=\"display:block;border:0\">")
                 .append("<h2 style=\"color:").append(cor).append(";font-size:18px\">").append(titulo).append("</h2>")
                 .append("<p>Rede Krill — Recebimento</p>")
@@ -83,8 +84,8 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
         if (a.getMotivoCancelamento() != null) linha(sb, "Motivo do cancelamento", a.getMotivoCancelamento());
         sb.append("</table>");
         if (link != null) {
-            sb.append("<p><a href=\"").append(HtmlUtils.htmlEscape(link)).append("\" style=\"display:inline-block;background:#0f7b3f;color:#fff;")
-                    .append("padding:8px 14px;border-radius:6px;text-decoration:none\">Confirmar presença e informar placa</a></p>");
+            sb.append("<p><a href=\"").append(HtmlUtils.htmlEscape(link)).append("\" style=\"display:inline-block;background:#148a42;color:#fff;")
+                    .append("padding:8px 14px;border-radius:8px;text-decoration:none\">Confirmar presença e informar placa</a></p>");
         }
         sb.append("<p style=\"color:#64748b;font-size:12px\">Apresente o ID do pedido na portaria.</p></div>");
         return sb.toString();

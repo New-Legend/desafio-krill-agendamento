@@ -2,18 +2,14 @@
 import { computed } from 'vue'
 
 const props = defineProps({ status: { type: String, required: true } })
-const MAPA = {
-  AGENDADO: ['Agendado', 'info'],
-  CONFIRMADO: ['Confirmado', 'success'],
-  CHEGOU: ['Chegou', 'warn'],
-  EM_RECEBIMENTO: ['Em recebimento', 'warn'],
-  RECEBIDO: ['Recebido', 'success'],
-  CANCELADO: ['Cancelado', 'danger'],
-  NAO_COMPARECEU: ['Não compareceu', 'secondary']
+const ROTULOS = {
+  AGENDADO: 'Agendado', CONFIRMADO: 'Confirmado', CHEGOU: 'Chegou', EM_RECEBIMENTO: 'Em recebimento',
+  RECEBIDO: 'Recebido', CANCELADO: 'Cancelado', NAO_COMPARECEU: 'Não compareceu'
 }
-const item = computed(() => MAPA[props.status] || [props.status, 'secondary'])
+const rotulo = computed(() => ROTULOS[props.status] || props.status)
+const classe = computed(() => (ROTULOS[props.status] ? props.status.toLowerCase() : 'outro'))
 </script>
 
 <template>
-  <Tag :value="item[0]" :severity="item[1]" />
+  <span class="status" :class="classe">{{ rotulo }}</span>
 </template>
