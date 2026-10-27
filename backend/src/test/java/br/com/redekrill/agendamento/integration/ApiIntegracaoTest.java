@@ -267,4 +267,101 @@ class ApiIntegracaoTest {
         mvc.perform(get("/api/v1/vales-palete/" + valeId).header("Authorization", usuario)).andExpect(status().isOk());
         mvc.perform(patch("/api/v1/vales-palete/" + valeId + "/cancelamento").header("Authorization", admin)).andExpect(status().isUnprocessableEntity());
     }
+
+    @Test
+    void porteRecebimentoCompleto() throws Exception {
+        String admin = token("admin", "admin123");
+        String usuario = token("usuario", "usuario123");
+        LocalDate d = dia.plusDays(2);
+        var json_ = MediaType.APPLICATION_JSON;
+
+        // multi-CD e fornecedor cadastrado
+        mvc.perform(post("/api/v1/cds").header("Authorization", usuario).contentType(json_)
+                .content("{\"codigo\":\"807\",\"nome\":\"CD 2\",\"ativo\":true}")).andExpect(status().isForbidden());
+        long cd2 = json.readTree(mvc.perform(post("/api/v1/cds").header("Authorization", admin).contentType(json_)
+                        .content("{\"codigo\":\"807\",\"nome\":\"CD 2\",\"capacidadeDiariaPaletes\":100,\"capacidadeFaixaPaletes\":30,\"ativo\":true}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString()).get("id").asLong();
+        mvc.perform(get("/api/v1/cds").header("Authorization", usuario)).andExpect(jsonPath("$.length()").value(2));
+        mvc.perform(post("/api/v1/fornecedores").header("Authorization", admin).contentType(json_)
+                .content("{\"cnpj\":\"11.222.333/0001-80\",\"razaoSocial\":\"X\",\"email\":\"x@x.com\",\"ativo\":true}"))
+                .andExpect(status().isUnprocessableEntity());
+        long forn = json.readTree(mvc.perform(post("/api/v1/fornecedores").header("Authorization", admin).contentType(json_)
+                        .content("{\"cnpj\":\"11.222.333/0001-81\",\"razaoSocial\":\"Litoral Alimentos\",\"email\":\"agenda@litoral.com.br\",\"ativo\":true}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString()).get("id").asLong();
+
+        String corpo = agendamento(1, 1, 40).replace(dia.toString(), d.toString())
+                .replace("\"observacao\"", "\"cdId\":" + cd2 + ",\"fornecedorId\":" + forn + ",\"observacao\"");
+        JsonNode c = json.readTree(mvc.perform(post("/api/v1/agendamentos").header("Authorization", admin).contentType(json_).content(corpo))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.alertas[0].tipo").value("FAIXA"))
+                .andReturn().getResponse().getContentAsString());
+        long id = c.at("/agendamento/id").asLong();
+        assertThat(c.at("/agendamento/cdId").asLong()).isEqualTo(cd2);
+        mvc.perform(get("/api/v1/ocupacao").param("data", d.toString()).param("cdId", String.valueOf(cd2)).header("Authorization", usuario))
+                .andExpect(jsonPath("$.capacidade").value(100)).andExpect(jsonPath("$.paletesOcupados").value(40));
+        mvc.perform(get("/api/v1/ocupacao").param("data", d.toString()).header("Authorization", usuario))
+                .andExpect(jsonPath("$.capacidade").value(480)).andExpect(jsonPath("$.paletesOcupados").value(0));
+
+        // fornecedor remarca pelo link: só faixa com vaga
+        String link = c.get("linkFornecedor").asText();
+        String tk = link.substring(link.lastIndexOf('/') + 1);
+        mvc.perform(get("/api/v1/publico/fornecedor/" + tk + "/disponibilidade")).andExpect(jsonPath("$.length()").value(14))
+                .andExpect(jsonPath("$[0].capacidade").value(100));
+        mvc.perform(put("/api/v1/publico/fornecedor/" + tk + "/reagendamento").contentType(json_)
+                .content("{\"data\":\"" + d + "\",\"faixaHorariaId\":2}")).andExpect(status().isUnprocessableEntity());
+        mvc.perform(patch("/api/v1/agendamentos/" + id + "/data").header("Authorization", admin).contentType(json_)
+                .content("{\"data\":\"" + d.plusDays(1) + "\",\"faixaHorariaId\":2}"))
+                .andExpect(jsonPath("$.agendamento.faixaHorariaId").value(2)).andExpect(jsonPath("$.alertas[0].tipo").value("FAIXA"));
+
+        // recebimento + NF-e
+        for (String a : new String[]{"{\"acao\":\"CHEGADA\",\"placa\":\"ABC1D23\"}", "{\"acao\":\"INICIAR\",\"conferente\":\"Carlos\"}"}) {
+            mvc.perform(patch("/api/v1/agendamentos/" + id + "/status").header("Authorization", admin).contentType(json_).content(a)).andExpect(status().isOk());
+        }
+        byte[] xml = getClass().getResourceAsStream("/nfe/nfe-exemplo.xml").readAllBytes();
+        var arquivo = new org.springframework.mock.web.MockMultipartFile("arquivo", "nfe.xml", "text/xml", xml);
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/v1/agendamentos/" + id + "/notas")
+                        .file(arquivo).header("Authorization", usuario)).andExpect(status().isForbidden());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/v1/agendamentos/" + id + "/notas")
+                        .file(arquivo).header("Authorization", admin)).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.produtosCriados").value(2)).andExpect(jsonPath("$.nota.itens.length()").value(2));
+        mvc.perform(get("/api/v1/agendamentos/" + id + "/notas").header("Authorization", usuario)).andExpect(jsonPath("$.length()").value(1));
+        mvc.perform(get("/api/v1/produtos").param("semPeso", "true").header("Authorization", usuario)).andExpect(jsonPath("$.length()").value(2));
+        long prod = json.readTree(mvc.perform(get("/api/v1/produtos").header("Authorization", usuario)).andReturn().getResponse().getContentAsString()).get(0).get("id").asLong();
+        mvc.perform(put("/api/v1/produtos/" + prod + "/peso").header("Authorization", admin).contentType(json_)
+                .content("{\"pesoBrutoKg\":5.2,\"itensPorPalete\":40}")).andExpect(jsonPath("$.pesoBrutoKg").value(5.2));
+        mvc.perform(patch("/api/v1/agendamentos/" + id + "/status").header("Authorization", admin).contentType(json_)
+                .content("{\"acao\":\"CONCLUIR\",\"paletesRecebidos\":38}")).andExpect(jsonPath("$.status").value("RECEBIDO"));
+
+        // relatórios
+        String ini = d.plusDays(1).toString();
+        mvc.perform(get("/api/v1/divergencias").param("inicio", ini).param("fim", ini).header("Authorization", usuario))
+                .andExpect(jsonPath("$[0].diferencaPaletes").value(-2)).andExpect(jsonPath("$[0].notas").value(1));
+        mvc.perform(get("/api/v1/divergencias.csv").param("inicio", ini).param("fim", ini).header("Authorization", usuario))
+                .andExpect(status().isOk()).andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/csv")));
+        mvc.perform(get("/api/v1/parametros/descarga").header("Authorization", usuario)).andExpect(jsonPath("$.length()").value(org.hamcrest.Matchers.greaterThan(0)));
+        mvc.perform(put("/api/v1/parametros/descarga/2").header("Authorization", admin).contentType(json_)
+                .content("{\"minutosPrevistos\":45,\"toleranciaEsperaMinutos\":20,\"custoPorPalete\":2.5}")).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/relatorios/descarga").param("inicio", ini).param("fim", ini).header("Authorization", usuario))
+                .andExpect(jsonPath("$.linhas.length()").value(1)).andExpect(jsonPath("$.resumo[0].recebimentos").value(1));
+        mvc.perform(get("/api/v1/relatorios/descarga.csv").param("inicio", ini).param("fim", ini).header("Authorization", usuario)).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/rotina").header("Authorization", usuario)).andExpect(jsonPath("$.itens.length()").value(8));
+
+        // conta-corrente, cobrança, recibo e lojas
+        mvc.perform(post("/api/v1/vales-palete").header("Authorization", admin).contentType(json_)
+                .content("{\"agendamentoId\":" + id + ",\"pbr\":20,\"chep\":0,\"chapatex\":0,\"descartaveis\":0}")).andExpect(status().isCreated());
+        mvc.perform(get("/api/v1/paletes/saldos").param("fornecedor", "beta").header("Authorization", usuario))
+                .andExpect(jsonPath("$[0].saldoEmAberto").value(20));
+        long cob = json.readTree(mvc.perform(post("/api/v1/paletes/cobrancas").header("Authorization", admin).contentType(json_)
+                        .content("{\"fornecedor\":\"Distribuidora Beta\",\"quantidade\":5,\"valorUnitario\":45,\"vencimento\":\"" + d + "\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString()).get("id").asLong();
+        mvc.perform(post("/api/v1/paletes/cobrancas/" + cob + "/pagamento").header("Authorization", admin).contentType(json_)
+                .content("{\"forma\":\"PIX\"}")).andExpect(jsonPath("$.reciboNumero").value(org.hamcrest.Matchers.startsWith("RP-")));
+        mvc.perform(get("/api/v1/paletes/cobrancas/" + cob).header("Authorization", usuario)).andExpect(jsonPath("$.status").value("PAGA"));
+        mvc.perform(get("/api/v1/paletes/saldos").param("fornecedor", "beta").header("Authorization", usuario))
+                .andExpect(jsonPath("$[0].saldoEmAberto").value(15));
+        mvc.perform(post("/api/v1/paletes/movimentos").header("Authorization", admin).contentType(json_)
+                        .content("{\"tipo\":\"ENVIO\",\"loja\":\"Loja 12\",\"pbr\":30,\"chep\":0,\"chapatex\":0,\"descartaveis\":0}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.romaneio").value(org.hamcrest.Matchers.startsWith("RM-")));
+        mvc.perform(get("/api/v1/paletes/lojas").header("Authorization", usuario)).andExpect(jsonPath("$[0].pbr").value(30));
+        mvc.perform(get("/api/v1/paletes/movimentos").header("Authorization", usuario)).andExpect(jsonPath("$.length()").value(1));
+    }
 }
