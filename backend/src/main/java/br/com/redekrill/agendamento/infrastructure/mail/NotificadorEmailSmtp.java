@@ -67,7 +67,7 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
         Agendamento a = d.agendamento();
         StringBuilder sb = new StringBuilder();
         sb.append("<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#334155\">")
-                .append("<div style=\"background:#020617;height:6px;border-bottom:2px solid #ffd21f\"></div>")
+                .append("<div style=\"background:#1e3a8a;height:6px;border-bottom:3px solid #1d4ed8\"></div>")
                 .append("<img src=\"cid:logo\" alt=\"Rede Krill\" width=\"90\" height=\"83\" style=\"display:block;border:0\">")
                 .append("<h2 style=\"color:").append(cor).append(";font-size:18px\">").append(titulo).append("</h2>")
                 .append("<p>Rede Krill — Recebimento</p>")

@@ -12,16 +12,16 @@ import { quandoSessaoExpirar } from './api'
 import { registrarComponentes } from './componentes'
 import { ptBR } from './locale'
 
-// Paleta do Gestão CD (ver styles/tokens.css): primário = azul do sistema #0b63b5, casca Slate, toasts .atlas-toast.
+// Paleta do Gestão CD (ver styles/tokens.css): primário = azul-marinho Krill #1e3a8a (topo de produção), toasts .atlas-toast.
 const Tema = definePreset(Aura, {
   semantic: {
     primary: {
-      50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#2563eb',
-      500: '#0b63b5', 600: '#0b63b5', 700: '#073b73', 800: '#073b73', 900: '#061d37', 950: '#061d37'
+      50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa',
+      500: '#1d4ed8', 600: '#1e3a8a', 700: '#1e3a8a', 800: '#1e40af', 900: '#172554', 950: '#172554'
     },
     colorScheme: {
       light: {
-        primary: { color: 'var(--gc-blue-700)', contrastColor: 'var(--gc-panel)', hoverColor: 'var(--gc-blue-900)', activeColor: 'var(--gc-blue-900)' },
+        primary: { color: 'var(--gc-navy)', contrastColor: 'var(--gc-panel)', hoverColor: 'var(--gc-navy-hover)', activeColor: 'var(--gc-navy-hover)' },
         text: { color: 'var(--gc-text)', hoverColor: 'var(--gc-heading)', mutedColor: 'var(--gc-muted)' },
         content: { background: 'var(--gc-panel)', borderColor: 'var(--gc-border)', color: 'var(--gc-text)' },
         formField: {

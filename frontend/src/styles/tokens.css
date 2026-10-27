@@ -5,7 +5,7 @@
  *                     status do agendamento (.agendado, .confirmado…), legenda do gráfico, .danger-link
  *   - src/styles/atlas-theme.css (#atlas-ui.atlas-theme) → casca Slate: topo, menu, fundo, painéis,
  *                     bordas, tabelas, campos, botões, login
- *   - manifest do worker → theme_color #020617, background_color #f8fafc
+ *   - produção (index.ts "Tema: topbar em azul-marinho") + print do app → #1e3a8a; manifest → #1e3a8a / #f8fafc
  */
 :root {
   /* marca (index.ts :root) */
@@ -16,15 +16,30 @@
   --gc-yellow-400: #ffd21f;
   --gc-ok: #148a42;
 
+  /* azul-marinho Krill em produção (index.ts "Tema: topbar em azul-marinho da marca"; amostrado no print do app: #1e3a8a) */
+  --gc-navy: #1e3a8a;              /* topo, menu ativo, foco, primário, cabeçalho de tabela */
+  --gc-navy-hover: #1e40af;
+  --gc-navy-vivo: #1d4ed8;         /* início da linha do card (.home-central-card > div:first-child) */
+  --gc-navy-50: #eff6ff;           /* menu ativo / opção selecionada */
+  --gc-navy-100: #dbeafe;
+  --gc-navy-200: #bfdbfe;          /* outline de foco */
+  --gc-card-linha: linear-gradient(to right, #1d4ed8, #1e293b, transparent);
+  --gc-eyebrow: #94a3b8;           /* sigla do módulo (WMS, REC…) */
+  --gc-card-titulo: #1e293b;       /* título do módulo, caixa alta */
+  --gc-card-sub: #475569;
+  --gc-icone-circulo: #f8fafc;
+  --gc-icone: #020617;
+  --gc-chevron: #cbd5e1;
+
   /* casca Slate (atlas-theme) */
-  --gc-topbar-bg: #020617;         /* slate-950: #app-topbar, #erp-sidebar, thead, botões padrão */
-  --gc-topbar-border: #1e293b;     /* slate-800 */
-  --gc-topbar-text: #f8fafc;
-  --gc-topbar-control-border: #334155;
-  --gc-topbar-hover: #1e293b;      /* --shell-button-hover */
-  --gc-sidebar-active: #1e293b;    /* .is-active-route bg-slate-800 */
-  --gc-sidebar-text: #f1f5f9;      /* text-slate-100 */
-  --gc-tab-text: #cbd5e1;
+  --gc-topbar-bg: #1e3a8a;
+  --gc-topbar-border: rgba(255, 255, 255, .16);
+  --gc-topbar-text: #ffffff;
+  --gc-topbar-control-border: #ffffff;
+  --gc-topbar-hover: rgba(255, 255, 255, .12);
+  --gc-sidebar-active: #eff6ff;
+  --gc-sidebar-text: #1e293b;
+  --gc-tab-text: rgba(255, 255, 255, .82);
   --gc-bg: #f8fafc;                /* .main bg-slate-50 */
   --gc-panel: #ffffff;
   --gc-border: #e2e8f0;            /* slate-200 */
@@ -37,8 +52,8 @@
   --gc-placeholder: #94a3b8;       /* slate-400 */
   --gc-input-bg: #f8fafc;          /* .atlas-input / personalização bg-slate-50 */
   --gc-input-disabled: #f1f5f9;
-  --gc-focus: #020617;             /* focus border slate-950 */
-  --gc-focus-ring: rgba(2, 6, 23, .15);
+  --gc-focus: #1e3a8a;
+  --gc-focus-ring: rgba(30, 58, 138, .2);
   --gc-login-accent: #991b1b;      /* botão e foco do login */
   --gc-login-hero: #0f172a;
 
