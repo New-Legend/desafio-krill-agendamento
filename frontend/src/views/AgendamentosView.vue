@@ -13,8 +13,70 @@ const router = useRouter()
 const notificar = useNotificar()
 const { enviando, enviar } = useEnvio()
 
-const filtro = reactive({ inicio: deIso(hoje()), fim: deIso(somarDias(hoje(), 30)), status: 'AGENDADO', fornecedor: '', idPedido: null })
-const status = [{ label: 'Agendados', value: 'AGENDADO' }, { label: 'Cancelados', value: 'CANCELADO' }, { label: 'Todos', value: null }]
+const filtro = reactive({ inicio: deIso(hoje()), fim: deIso(somarDias(hoje(), 30)), status: route.query.status || null, fornecedor: '', idPedido: null })
+const status = [
+  { label: 'Todos', value: null }, { label: 'Agendado', value: 'AGENDADO' }, { label: 'Confirmado', value: 'CONFIRMADO' },
+  { label: 'Chegou', value: 'CHEGOU' }, { label: 'Em recebimento', value: 'EM_RECEBIMENTO' }, { label: 'Recebido', value: 'RECEBIDO' },
+  { label: 'Cancelado', value: 'CANCELADO' }, { label: 'Não compareceu', value: 'NAO_COMPARECEU' }
+]
+const acao = ref(null)
+const op = reactive({ placa: '', motorista: '', conferente: '', paletesRecebidos: null, divergencia: '' })
+const link = ref('')
+const podeCancelar = computed(() => ['AGENDADO', 'CONFIRMADO'].includes(detalhe.value?.status))
+const acoes = computed(() => {
+  const s = detalhe.value?.status
+  const r = []
+  if (s === 'AGENDADO') r.push({ k: 'CONFIRMAR', label: 'Confirmar', icon: 'pi pi-check' })
+  if (s === 'AGENDADO' || s === 'CONFIRMADO') r.push({ k: 'CHEGADA', label: 'Registrar chegada', icon: 'pi pi-truck' }, { k: 'NAO_COMPARECEU', label: 'Não compareceu', icon: 'pi pi-ban', excluir: true })
+  if (s === 'CHEGOU') r.push({ k: 'INICIAR', label: 'Iniciar conferência', icon: 'pi pi-play' })
+  if (s === 'EM_RECEBIMENTO') r.push({ k: 'CONCLUIR', label: 'Concluir recebimento', icon: 'pi pi-check-square' })
+  return r
+})
+const TITULOS = { CONFIRMAR: 'Confirmar agendamento', CHEGADA: 'Chegada na portaria', INICIAR: 'Início da conferência', CONCLUIR: 'Conclusão do recebimento', NAO_COMPARECEU: 'Registrar não comparecimento' }
+
+function prepararAcao(k) {
+  acao.value = k
+  op.placa = detalhe.value.placa || ''
+  op.motorista = detalhe.value.motorista || ''
+  op.conferente = detalhe.value.conferente || ''
+  op.paletesRecebidos = detalhe.value.quantidadePaletes
+  op.divergencia = ''
+}
+
+function executarAcao() {
+  if (acao.value === 'CHEGADA' && !op.placa.trim()) return notificar.aviso('Informe a placa do veículo')
+  if (acao.value === 'INICIAR' && !op.conferente.trim()) return notificar.aviso('Informe o conferente')
+  if (acao.value === 'CONCLUIR' && (op.paletesRecebidos === null || op.paletesRecebidos < 0)) return notificar.aviso('Informe os paletes recebidos')
+  enviar(async () => {
+    try {
+      const r = await api(`/agendamentos/${detalhe.value.id}/status`, {
+        method: 'PATCH',
+        body: { acao: acao.value, placa: op.placa.trim() || null, motorista: op.motorista.trim() || null, conferente: op.conferente.trim() || null,
+          paletesRecebidos: op.paletesRecebidos, divergencia: op.divergencia.trim() || null }
+      })
+      detalhe.value = r
+      acao.value = null
+      notificar.sucesso(`${r.statusDescricao}: agendamento #${r.id}`)
+      if (r.divergencia) notificar.aviso(r.divergencia, 'Divergência registrada')
+      buscar()
+    } catch (e) {
+      notificar.erro(e)
+    }
+  })
+}
+
+function gerarLink() {
+  enviar(async () => {
+    try {
+      const r = await api(`/agendamentos/${detalhe.value.id}/link-fornecedor`, { method: 'POST' })
+      link.value = r.linkFornecedor
+      await navigator.clipboard?.writeText(r.linkFornecedor).catch(() => {})
+      notificar.sucesso('Novo link gerado e copiado. O link anterior deixou de valer.')
+    } catch (e) {
+      notificar.erro(e)
+    }
+  })
+}
 const lista = ref([])
 const carregando = ref(false)
 const detalhe = ref(null)
@@ -52,6 +114,8 @@ async function abrir(id) {
 function fechar() {
   detalhe.value = null
   cancelando.value = false
+  acao.value = null
+  link.value = ''
   motivo.value = ''
   erroMotivo.value = ''
   if (route.params.id) router.replace('/agendamentos')
@@ -101,7 +165,7 @@ onMounted(() => {
   <section class="painel">
     <div class="painel-titulo"><h2>Resultado</h2><span class="texto-suave">{{ lista.length }} registro(s)</span></div>
     <DataTable :value="lista" :loading="carregando" size="small" striped-rows row-hover data-key="id" paginator :rows="25"
-               :row-class="(r) => (r.status === 'CANCELADO' ? 'linha-cancelada' : '')" @row-click="(e) => router.push(`/agendamentos/${e.data.id}`)">
+               :row-class="(r) => (['CANCELADO', 'NAO_COMPARECEU'].includes(r.status) ? 'linha-cancelada' : '')" @row-click="(e) => router.push(`/agendamentos/${e.data.id}`)">
       <template #empty><div class="vazio">Nenhum agendamento encontrado para o filtro</div></template>
       <Column field="id" header="#" class="num" />
       <Column header="Data" sortable sort-field="data"><template #body="{ data }">{{ fmtData(data.data) }}</template></Column>
@@ -111,11 +175,12 @@ onMounted(() => {
       <Column field="tipoCaminhao" header="Caminhão" />
       <Column field="tipoPaletizacao" header="Paletização" />
       <Column header="Paletes" class="num"><template #body="{ data }">{{ data.quantidadePaletes }}<span v-if="data.paletesEquivalentes !== data.quantidadePaletes" class="texto-suave"> ({{ data.paletesEquivalentes }})</span></template></Column>
+      <Column field="placa" header="Placa" />
       <Column header="Status"><template #body="{ data }"><StatusAgendamento :status="data.status" /></template></Column>
     </DataTable>
   </section>
 
-  <Dialog v-model:visible="dialogo" modal :header="detalhe ? `Agendamento #${detalhe.id}` : ''" :style="{ width: '640px' }" :breakpoints="{ '680px': '96vw' }">
+  <Dialog v-model:visible="dialogo" modal :header="detalhe ? `Agendamento #${detalhe.id}` : ''" :style="{ width: '720px' }" :breakpoints="{ '680px': '96vw' }">
     <template v-if="detalhe">
       <dl class="detalhes">
         <dt>Status</dt><dd><StatusAgendamento :status="detalhe.status" /></dd>
@@ -128,11 +193,41 @@ onMounted(() => {
         <dt>Paletes</dt><dd>{{ detalhe.quantidadePaletes }} informados · {{ detalhe.paletesEquivalentes }} na ocupação</dd>
         <dt>Observação</dt><dd>{{ detalhe.observacao || '—' }}</dd>
         <dt>Criado</dt><dd>{{ fmtDataHora(detalhe.criadoEm) }} por {{ detalhe.criadoPor }}</dd>
+        <template v-if="detalhe.placa || detalhe.motorista">
+          <dt>Veículo</dt><dd>{{ detalhe.placa || '—' }} · {{ detalhe.motorista || 'motorista não informado' }}</dd>
+        </template>
+        <template v-if="detalhe.chegadaEm"><dt>Chegada</dt><dd>{{ fmtDataHora(detalhe.chegadaEm) }}</dd></template>
+        <template v-if="detalhe.inicioRecebimentoEm"><dt>Conferência</dt><dd>{{ fmtDataHora(detalhe.inicioRecebimentoEm) }} · {{ detalhe.conferente }}</dd></template>
+        <template v-if="detalhe.fimRecebimentoEm"><dt>Recebido</dt><dd>{{ fmtDataHora(detalhe.fimRecebimentoEm) }} · {{ detalhe.paletesRecebidos }} paletes</dd></template>
+        <template v-if="detalhe.divergencia"><dt>Divergência</dt><dd class="erro">{{ detalhe.divergencia }}</dd></template>
         <template v-if="detalhe.status === 'CANCELADO'">
           <dt>Cancelado</dt><dd>{{ fmtDataHora(detalhe.canceladoEm) }} por {{ detalhe.canceladoPor }}</dd>
           <dt>Motivo</dt><dd>{{ detalhe.motivoCancelamento }}</dd>
         </template>
       </dl>
+      <div v-if="link" class="link-fornecedor">
+        <label for="lk">Link do fornecedor</label>
+        <InputText id="lk" :model-value="link" readonly @focus="$event.target.select()" />
+      </div>
+      <form v-if="acao" class="painel acao-op" @submit.prevent="executarAcao">
+        <h2>{{ TITULOS[acao] }}</h2>
+        <div class="form-grade">
+          <template v-if="acao === 'CHEGADA'">
+            <div class="campo c4"><label for="op-placa">Placa <span class="obrig">*</span></label><InputText id="op-placa" v-model="op.placa" maxlength="8" autofocus /></div>
+            <div class="campo c8"><label for="op-mot">Motorista</label><InputText id="op-mot" v-model="op.motorista" maxlength="80" /></div>
+          </template>
+          <div v-if="acao === 'INICIAR'" class="campo c12"><label for="op-conf">Conferente <span class="obrig">*</span></label><InputText id="op-conf" v-model="op.conferente" maxlength="80" autofocus /></div>
+          <template v-if="acao === 'CONCLUIR'">
+            <div class="campo c4"><label for="op-pal">Paletes recebidos <span class="obrig">*</span></label><InputNumber v-model="op.paletesRecebidos" input-id="op-pal" :min="0" :max="10000" /></div>
+            <div class="campo c8"><label for="op-div">Divergência</label><InputText id="op-div" v-model="op.divergencia" maxlength="255" /><small class="texto-suave">Se a contagem diferir do agendado, a divergência é registrada automaticamente.</small></div>
+          </template>
+          <p v-if="acao === 'CONFIRMAR' || acao === 'NAO_COMPARECEU'" class="c12 texto-suave">{{ acao === 'CONFIRMAR' ? 'Confirma que o fornecedor virá na data e faixa agendadas.' : 'O agendamento deixa de ocupar capacidade.' }}</p>
+        </div>
+        <div class="acoes">
+          <Button label="Voltar" type="button" class="btn-secundario" :disabled="enviando" @click="acao = null" />
+          <Button label="Salvar" type="submit" icon="pi pi-check" :class="acao === 'NAO_COMPARECEU' ? 'btn-excluir' : 'btn-confirmar'" :loading="enviando" :disabled="enviando" />
+        </div>
+      </form>
       <div v-if="cancelando" class="campo c12" style="margin-top: 12px">
         <label for="motivo">Motivo do cancelamento <span class="obrig">*</span></label>
         <Textarea id="motivo" v-model="motivo" rows="2" maxlength="255" :invalid="!!erroMotivo" autofocus />
@@ -140,14 +235,25 @@ onMounted(() => {
       </div>
     </template>
     <template #footer>
-      <template v-if="detalhe && isAdmin && detalhe.status === 'AGENDADO'">
+      <template v-if="detalhe && isAdmin && !acao && !cancelando">
+        <Button v-for="a in acoes" :key="a.k" :label="a.label" :icon="a.icon" :class="a.excluir ? 'btn-excluir' : 'btn-confirmar'" @click="prepararAcao(a.k)" />
+        <Button v-if="['AGENDADO', 'CONFIRMADO'].includes(detalhe.status)" label="Link do fornecedor" icon="pi pi-link" class="btn-secundario" :disabled="enviando" @click="gerarLink" />
+        <Button v-if="['CHEGOU', 'EM_RECEBIMENTO', 'RECEBIDO'].includes(detalhe.status)" label="Emitir vale-palete" icon="pi pi-ticket" class="btn-secundario" @click="router.push({ path: '/vales-palete/novo', query: { agendamento: detalhe.id } })" />
+      </template>
+      <template v-if="detalhe && isAdmin && podeCancelar && !acao">
         <template v-if="cancelando">
           <Button label="Voltar" class="btn-secundario" :disabled="enviando" @click="cancelando = false" />
           <Button label="Confirmar cancelamento" icon="pi pi-times" class="btn-excluir" :loading="enviando" :disabled="enviando" @click="confirmarCancelamento" />
         </template>
         <Button v-else label="Cancelar agendamento" icon="pi pi-times" class="btn-excluir" @click="cancelando = true" />
       </template>
-      <Button v-if="!cancelando" label="Fechar" class="btn-secundario" @click="fechar" />
+      <Button v-if="!cancelando && !acao" label="Fechar" class="btn-secundario" @click="fechar" />
     </template>
   </Dialog>
 </template>
+
+<style scoped>
+.link-fornecedor { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; }
+.acao-op { margin: 12px 0 0; background: var(--cor-fundo); }
+.acao-op .acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+</style>

@@ -15,13 +15,15 @@ const mostrarTopo = computed(() => !route.meta.publica)
 
 const itens = computed(() => {
   const base = [
+    { to: '/inicio', label: 'Início', icon: 'pi pi-home' },
     { to: '/painel', label: 'Ocupação', icon: 'pi pi-chart-bar' },
     { to: '/agendamentos', label: 'Agendamentos', icon: 'pi pi-calendar' },
+    { to: '/vales-palete', label: 'Vale-palete', icon: 'pi pi-ticket' },
     { to: '/relatorio', label: 'Relatório', icon: 'pi pi-file' }
   ]
   if (!isAdmin.value) return [{ grupo: 'Operação', itens: base }]
   return [
-    { grupo: 'Operação', itens: [base[0], { to: '/agendamentos/novo', label: 'Novo agendamento', icon: 'pi pi-plus' }, base[1], base[2]] },
+    { grupo: 'Operação', itens: [base[0], base[1], { to: '/agendamentos/novo', label: 'Novo agendamento', icon: 'pi pi-plus' }, base[2], base[3], base[4]] },
     {
       grupo: 'Cadastros',
       itens: [
@@ -74,7 +76,7 @@ function sair() {
   <template v-if="mostrarTopo">
     <header class="topo">
       <button class="btn-topo btn-hamburguer" aria-label="Abrir menu" @click="menuAberto = true"><i class="pi pi-bars" /></button>
-      <RouterLink to="/painel" class="marca">
+      <RouterLink to="/inicio" class="marca">
         <img src="/icons/icon-192.png" alt="" />
         <span>Rede Krill <small>· Recebimento</small></span>
       </RouterLink>

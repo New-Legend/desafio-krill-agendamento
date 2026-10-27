@@ -75,6 +75,28 @@ onMounted(async () => {
   }
 })
 
+const erp = ref(null)
+let ultimoPedido = null
+async function buscarPedido() {
+  const id = form.idPedido
+  if (!id || id === ultimoPedido) return
+  ultimoPedido = id
+  try {
+    const r = await api(`/erp/pedidos/${id}`)
+    erp.value = r
+    const p = r.pedido
+    if (p.fornecedorNome) form.fornecedor = p.fornecedorNome.slice(0, 80)
+    if (p.fornecedorEmail) form.emailFornecedor = p.fornecedorEmail.slice(0, 80)
+    if (p.quantidadePaletesPrevista) form.quantidadePaletes = p.quantidadePaletesPrevista
+    if (r.tipoPaletizacaoId && paletizacoes.value.some((x) => x.id === r.tipoPaletizacaoId)) form.tipoPaletizacaoId = r.tipoPaletizacaoId
+    if (p.dataPrevistaEntrega && p.dataPrevistaEntrega >= hoje()) form.data = deIso(p.dataPrevistaEntrega)
+    notificar.sucesso(`Dados do pedido ${id} preenchidos (${r.provedor === 'bluesoft' ? 'Bluesoft' : 'base local'})`, 'Pedido encontrado')
+  } catch (e) {
+    erp.value = null
+    if (e.status !== 404) notificar.erro(e)
+  }
+}
+
 function payload() {
   return {
     ...form,
@@ -142,7 +164,8 @@ function limpar() {
       </div>
       <div class="campo">
         <label for="pedido">ID do pedido <span class="obrig">*</span></label>
-        <InputNumber v-model="form.idPedido" input-id="pedido" :use-grouping="false" :min="1" :max="999999999999" :invalid="!!erros.idPedido" />
+        <InputNumber v-model="form.idPedido" input-id="pedido" :use-grouping="false" :min="1" :max="999999999999" :invalid="!!erros.idPedido" @blur="buscarPedido" @keydown.enter.prevent="buscarPedido" />
+        <small v-if="erp" class="texto-suave">{{ erp.pedido.situacao || "Pedido" }} · {{ erp.provedor === "bluesoft" ? "Bluesoft" : "base local" }}<template v-if="erp.pedido.lojaDestino"> · {{ erp.pedido.lojaDestino }}</template></small>
         <span v-if="erros.idPedido" class="erro">{{ erros.idPedido }}</span>
       </div>
       <div class="campo">
