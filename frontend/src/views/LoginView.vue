@@ -31,7 +31,7 @@ function entrar() {
 <template>
   <div class="login">
     <form class="login-cartao" @submit.prevent="entrar">
-      <img src="/icons/icon-192.png" alt="" />
+      <img src="/img/rede-krill-logo.png" alt="Rede Krill Supermercados" width="570" height="528" />
       <h1>Agendamento de Recebimento</h1>
       <p>Rede Krill · Centro de Distribuição</p>
       <div class="campo">

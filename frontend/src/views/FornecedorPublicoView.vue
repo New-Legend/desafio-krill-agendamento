@@ -54,7 +54,7 @@ onMounted(carregar)
 <template>
   <div class="publico">
     <header class="publico-topo">
-      <img src="/icons/icon-192.png" alt="" />
+      <img src="/img/rede-krill-logo.png" alt="Rede Krill" width="570" height="528" />
       <div><strong>Rede Krill</strong><small>Agendamento de entrega</small></div>
     </header>
 
@@ -90,7 +90,7 @@ onMounted(carregar)
 <style scoped>
 .publico { max-width: 560px; margin: 0 auto; padding: 16px 12px 32px; }
 .publico-topo { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
-.publico-topo img { width: 40px; height: 40px; border-radius: 8px; }
+.publico-topo img { height: 56px; width: auto; aspect-ratio: 570 / 528; object-fit: contain; }
 .publico-topo div { display: flex; flex-direction: column; }
 .publico-topo small { color: var(--cor-texto-suave); }
 .destaque { display: flex; flex-direction: column; padding: 10px 12px; background: var(--cor-fundo); border-radius: var(--raio); margin-bottom: 10px; }

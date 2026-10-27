@@ -50,11 +50,12 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
     private void enviar(String para, String assunto, String titulo, AgendamentoDetalhe d, String cor, String link) {
         try {
             MimeMessage msg = sender.createMimeMessage();
-            MimeMessageHelper h = new MimeMessageHelper(msg, false, StandardCharsets.UTF_8.name());
+            MimeMessageHelper h = new MimeMessageHelper(msg, true, StandardCharsets.UTF_8.name());
             h.setFrom(remetente);
             h.setTo(para);
             h.setSubject(assunto);
             h.setText(html(titulo, d, cor, link), true);
+            h.addInline("logo", new org.springframework.core.io.ClassPathResource("email/rede-krill-logo.png"), "image/png");
             sender.send(msg);
             log.info("E-mail '{}' enviado para {}", assunto, para);
         } catch (Exception e) {
@@ -66,6 +67,7 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
         Agendamento a = d.agendamento();
         StringBuilder sb = new StringBuilder();
         sb.append("<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#0f172a\">")
+                .append("<img src=\"cid:logo\" alt=\"Rede Krill\" width=\"90\" height=\"83\" style=\"display:block;border:0\">")
                 .append("<h2 style=\"color:").append(cor).append(";font-size:18px\">").append(titulo).append("</h2>")
                 .append("<p>Rede Krill — Recebimento</p>")
                 .append("<table cellpadding=\"6\" style=\"border-collapse:collapse;border:1px solid #e2e8f0\">");

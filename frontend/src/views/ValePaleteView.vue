@@ -151,7 +151,7 @@ onMounted(carregar)
 
     <article class="painel vale-impressao">
       <header class="vale-topo">
-        <div><strong>Rede Krill · Centro de Distribuição</strong><small>Vale-palete</small></div>
+        <div class="vale-marca"><img src="/img/rede-krill-logo.png" alt="Rede Krill" width="570" height="528" /><div><strong>Rede Krill · Centro de Distribuição</strong><small>Vale-palete</small></div></div>
         <div class="vale-codigo"><strong>{{ vale.codigo }}</strong><Tag :value="STATUS[vale.status][0]" :severity="STATUS[vale.status][1]" /></div>
       </header>
       <dl class="detalhes">
@@ -209,6 +209,8 @@ onMounted(carregar)
 .vale-topo { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--cor-texto); padding-bottom: 8px; margin-bottom: 10px; }
 .vale-topo div { display: flex; flex-direction: column; gap: 4px; }
 .vale-codigo { align-items: flex-end; }
+.vale-topo .vale-marca { flex-direction: row; align-items: center; gap: 10px; }
+.vale-marca img { height: 54px; width: auto; aspect-ratio: 570 / 528; object-fit: contain; }
 .vale-codigo strong { font-size: 18px; font-variant-numeric: tabular-nums; }
 .tabela-vale { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
 .tabela-vale th, .tabela-vale td { border: 1px solid var(--cor-linha); padding: 6px 8px; text-align: right; }

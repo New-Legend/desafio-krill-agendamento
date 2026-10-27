@@ -44,7 +44,7 @@ a { color: var(--cor-topo-2); }
   border-bottom: 3px solid var(--cor-destaque);
 }
 .marca { display: flex; align-items: center; gap: 8px; font-weight: 700; white-space: nowrap; color: #fff; text-decoration: none; }
-.marca img { width: 28px; height: 28px; border-radius: 6px; }
+.marca img { height: 30px; width: auto; aspect-ratio: 570 / 528; object-fit: contain; background: #fff; border-radius: 6px; padding: 2px 3px; }
 .marca small { font-weight: 500; color: #cbd5e1; }
 .menu { display: flex; gap: 2px; flex: 1; overflow-x: auto; }
 .menu a {
@@ -170,7 +170,7 @@ pre.json { background: var(--cor-campo); border-radius: var(--raio); padding: 8p
 .login-cartao p { margin: 0 0 16px; color: var(--cor-texto-suave); font-size: 13px; }
 .login-cartao .campo { margin-bottom: 10px; }
 .login-cartao .p-button { width: 100%; justify-content: center; }
-.login-cartao img { width: 44px; height: 44px; border-radius: 8px; }
+.login-cartao img { height: 96px; width: auto; aspect-ratio: 570 / 528; object-fit: contain; display: block; margin: 0 auto 8px; }
 
 /* ---------- responsivo ---------- */
 @media (max-width: 1100px) {

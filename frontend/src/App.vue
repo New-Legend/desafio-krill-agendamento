@@ -77,7 +77,7 @@ function sair() {
     <header class="topo">
       <button class="btn-topo btn-hamburguer" aria-label="Abrir menu" @click="menuAberto = true"><i class="pi pi-bars" /></button>
       <RouterLink to="/inicio" class="marca">
-        <img src="/icons/icon-192.png" alt="" />
+        <img src="/img/rede-krill-logo.png" alt="Rede Krill" width="570" height="528" />
         <span>Rede Krill <small>· Recebimento</small></span>
       </RouterLink>
       <nav class="menu">
