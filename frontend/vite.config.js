@@ -40,6 +40,23 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['tests/**/*.spec.js'],
-    coverage: { include: ['src/utils.js', 'src/api.js', 'src/sessao.js', 'src/composables/**', 'src/components/**'] }
+    setupFiles: ['tests/setup.js'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json-summary'],
+      // Partes críticas: formulário e lista de agendamentos, cadastros, guarda de rota/login, telas do porte do recebimento e base (api/sessão/utils).
+      include: [
+        'src/utils.js', 'src/api.js', 'src/sessao.js', 'src/router.js', 'src/composables/**', 'src/components/**',
+        'src/views/LoginView.vue', 'src/views/NovoAgendamentoView.vue', 'src/views/AgendamentosView.vue',
+        'src/views/FornecedoresView.vue', 'src/views/CentrosDistribuicaoView.vue', 'src/views/ProdutosView.vue',
+        'src/views/TiposCaminhaoView.vue', 'src/views/TiposPaletizacaoView.vue', 'src/views/FaixasView.vue',
+        'src/views/ParametrosDescargaView.vue', 'src/views/FornecedorPublicoView.vue', 'src/views/DivergenciasView.vue',
+        'src/views/DescargaView.vue', 'src/views/RotinaView.vue', 'src/views/ContaCorrenteView.vue',
+        'src/views/ReciboPaleteView.vue', 'src/views/MovimentosPaleteView.vue'
+      ],
+      exclude: ['src/components/AssinaturaPad.vue'],
+      // Funções ficam de fora do corte: o v8 conta cada arrow inline dos templates e cada import() lazy de rota como função.
+      thresholds: { lines: 80, statements: 80, branches: 80 }
+    }
   }
 })
