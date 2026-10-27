@@ -42,7 +42,7 @@ cd frontend && npm ci && npm run dev
 
 ```bash
 cd backend && mvn verify          # JUnit 5 + Mockito + Testcontainers + JaCoCo (mínimo 80% em domain/application)
-cd frontend && npm test           # Vitest
+cd frontend && npm test           # Vitest + Vue Test Utils (npm run test:coverage: mínimo 80% de linhas e ramos nas telas críticas)
 ```
 
 Relatório de cobertura: `backend/target/site/jacoco/index.html`.
@@ -56,6 +56,16 @@ Relatório de cobertura: `backend/target/site/jacoco/index.html`.
 - Fluxo da portaria: Agendado → Confirmado → Chegou → Em recebimento → Recebido (com divergência automática se a contagem diferir), ou Cancelado / Não compareceu.
 - **Vale-palete** com assinatura do motorista e do conferente na tela (dedo ou mouse), impressão A4 e controle de devolução.
 - Auditoria (somente ADMIN) de toda ação, incluindo login: quem, quando, ação, entidade e IP.
+
+### Recebimento completo (porte do Gestão CD)
+
+- **Remarcação:** o fornecedor remarca pelo link público, só em faixa com vaga (o servidor recusa se estourar). O CD remarca pelo detalhe e pode exceder, com alerta.
+- **Multi-CD:** cada centro de distribuição pode ter capacidade própria por dia e por faixa. O CD 1 segue as regras do desafio (480/120) e é o padrão de tudo.
+- **Cadastros:** fornecedores (CNPJ validado), produtos com peso, tempos de descarga por tipo de caminhão (previsto, tolerância de espera, custo por palete).
+- **NF-e:** importação do XML no detalhe do agendamento (parser sem XXE, até 2 MB), com criação dos produtos, peso calculado × peso da nota e avisos.
+- **Relatórios:** divergências (CSV), tempos de espera e descarga (CSV) e **rotina do dia** com as pendências do recebimento.
+- **Paletes:** conta-corrente por fornecedor, cobrança com recibo impresso, romaneios de envio/retorno para as lojas e saldo por loja.
+- WhatsApp fica como evolução futura; os avisos saem por e-mail e Web Push.
 
 ## Arquitetura
 

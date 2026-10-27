@@ -8,13 +8,14 @@
 | 1:00–2:00 | Terminal com `docker compose up --build` | "Um comando sobe tudo: banco, API, tela e uma caixa de e-mail de teste." |
 | 2:00–3:30 | Login como admin, Início | Ocupação do dia contra 480, as 4 faixas contra 120 (a vermelha estourou), próximos caminhões, status e alertas. |
 | 3:30–5:30 | Novo agendamento | Digitar o pedido 450002: os dados vêm do ERP. Trocar para não paletizado: a ocupação dobra na hora. Escolher uma faixa cheia: aparece o alerta, mas salva. |
-| 5:30–6:30 | Mailpit | E-mail que chegou ao fornecedor, com o link. Abrir o link: confirmar presença e informar a placa. |
+| 5:30–6:30 | Mailpit | E-mail que chegou ao fornecedor (com o logo), com o link. Abrir o link: confirmar presença, informar a placa e remarcar para uma faixa com vaga (as cheias ficam bloqueadas). |
 | 6:30–8:00 | Detalhe do agendamento | Registrar chegada, iniciar conferência, concluir com 1 palete a menos: a divergência é registrada sozinha. Emitir o vale-palete, assinar com o mouse e imprimir. |
-| 8:00–8:45 | Relatório e CSV | Filtrar o período e exportar. |
-| 8:45–9:30 | Login como usuario | Só consulta. Mostrar no Swagger que um POST com esse token volta 403: a regra está no backend. |
-| 9:30–10:00 | Auditoria | Quem fez, quando, o quê e de qual IP, inclusive os logins. |
+| 8:00–8:45 | Relatório, divergências e rotina | Relatório + CSV; Divergências com a NF-e importada (peso calculado × nota); Rotina do dia com o que falta resolver. |
+| 8:45–9:15 | Paletes | Conta-corrente do fornecedor, cobrar, receber e imprimir o recibo; romaneio para a loja. |
+| 9:15–9:45 | Login como usuario | Só consulta. Mostrar no Swagger que um POST com esse token volta 403: a regra está no backend. |
+| 9:45–10:00 | Auditoria | Quem fez, quando, o quê e de qual IP, inclusive os logins. |
 | 10:00–11:00 | Código | Pastas domain, application, infrastructure e web. `CalculadoraOcupacao` e o teste dela. |
-| 11:00–11:40 | `mvn verify` e o relatório JaCoCo | 52 testes; domain 100% e application 98,9% de linhas. |
+| 11:00–11:40 | `mvn verify` e `npm run test:coverage` | Backend 69 testes, domain+application 99,6% de linhas. Frontend 53 testes, 95,8% de linhas nas telas críticas. |
 | 11:40–12:00 | Celular / PWA | Instalar o app, receber o push de novo agendamento. Encerrar. |
 
 ## Perguntas e respostas
@@ -36,12 +37,20 @@
 15. **Push em Java funciona?** Sim. Uso a biblioteca `web-push` com chaves VAPID. O navegador entrega a notificação mesmo com a aba fechada.
 16. **Quando chega push?** Novo agendamento, cancelamento, capacidade excedida, chegada na portaria e divergência.
 17. **Como testou?** JUnit 5 e Mockito para a regra e os casos de uso, Testcontainers com Postgres real para a API inteira, Vitest no frontend.
-18. **Qual a cobertura?** Domain 100% de linhas, application 98,9%. O build falha se cair abaixo de 80%.
+18. **Qual a cobertura?** Backend: domain + application 99,6% de linhas e 91,4% de ramos; o build falha abaixo de 80%. Frontend: 95,8% de linhas e 83,7% de ramos nas telas críticas, com corte de 80% no `test:coverage`.
 19. **Por que Flyway?** O banco é versionado junto com o código. Qualquer ambiente sobe com a mesma estrutura.
 20. **Como estão os Dockerfiles?** Multi-stage: compila numa imagem e roda em outra pequena, sem root. O frontend roda em nginx sem root.
 21. **E a segurança das dependências?** Dependency-Check configurado e Trivy nas imagens. Atualizei o Boot e as bibliotecas. Os 4 achados que restaram não se aplicam ao projeto e estão justificados em SEGURANCA.md.
 22. **Por que versionar a API em /api/v1?** Se mudar o contrato, crio a v2 sem quebrar quem usa a v1.
 23. **Como entra o Bluesoft?** Por uma porta `PedidoCompraGateway`. Hoje roda o adaptador local. O do Bluesoft está pronto (OAuth `client_credentials`) e liga por variável quando houver credencial.
 24. **O que veio do Gestão CD?** Regras de capacidade, portaria, conferência, link do fornecedor e vale-palete com assinatura. O inventário completo está em PORTE-GESTAO-CD.md.
-25. **O que faria com mais tempo?** Importar o XML da NF-e, cadastro de fornecedores, conta-corrente e cobrança de paletes, relatório de tempo de descarga e migração para o Spring Boot 4.
+25. **O que faria com mais tempo?** WhatsApp como mais um canal de aviso, e-mail de cobrança de paletes, tipos de palete configuráveis e migração para o Spring Boot 4.
 26. **Como é o fuso horário?** Fixo em America/Sao_Paulo na API e nas telas, para o horário da faixa não mudar.
+27. **O fornecedor pode estourar a capacidade remarcando?** Não. Pelo link ele só vê como livres as faixas onde a carga cabe, e o servidor confere de novo. Quem pode exceder é o CD (só alerta), como pede o desafio.
+28. **Como funciona o multi-CD sem quebrar a regra do desafio?** O CD 1 não tem capacidade própria, então usa 480/120. Um CD novo pode ter outro limite; a conta é a mesma, só muda a capacidade.
+29. **Como a NF-e é lida com segurança?** Parser DOM com DTD e entidades externas desligadas (sem XXE), arquivo até 2 MB, e a chave de acesso não pode repetir.
+30. **De onde vem o peso da carga?** Do cadastro de produtos (peso bruto × quantidade). A tela compara com o peso da nota e marca divergência acima de 5%. Produto sem peso gera aviso e entra no filtro "somente sem peso".
+31. **Como sai o saldo de paletes do fornecedor?** Paletes entregues nos vales − devolvidos − cobrados (cobranças não canceladas). Ao receber, sai o recibo `RP-…` impresso.
+32. **O que a rotina do dia mostra?** Entregas de amanhã sem confirmação, atrasados, espera acima da tolerância, descarga longa, recebidos sem NF-e, divergências, vales pendentes e cobranças vencidas.
+33. **Como testou o frontend?** Vitest + Vue Test Utils montando as telas reais com PrimeVue e a API simulada: validação do formulário, envio, remarcação, cadastros, guarda de rota e login.
+

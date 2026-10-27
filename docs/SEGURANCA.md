@@ -42,3 +42,5 @@ Análise de 27/10/2026 (horário de Brasília).
 - Containers sem root (`app` na API, `nginx` uid 101 no web), imagens Alpine mínimas, healthcheck.
 - Segredos só por variável de ambiente (`JWT_SECRET`, `DB_PASSWORD`, `VAPID_*`, `BLUESOFT_*`). Veja o `.env.example`.
 - Revisão OWASP Top 10 no código: controle de acesso no backend, BCrypt, validação de entrada, consultas JPA parametrizadas, CSV sem injeção de fórmula, CSP e cabeçalhos de segurança, token do fornecedor guardado como hash, auditoria de login.
+- Upload do XML da NF-e: parser DOM com `disallow-doctype-decl`, entidades externas e XInclude desligados (sem XXE nem "billion laughs"), limite de 2 MB no Spring (multipart) e na tela, só ADMIN. Teste automatizado com um XML malicioso (`PorteRecebimentoDominioTest`).
+- Remarcação pelo link público: o token continua só como hash, a troca é auditada com IP e o servidor recusa faixa sem vaga.
