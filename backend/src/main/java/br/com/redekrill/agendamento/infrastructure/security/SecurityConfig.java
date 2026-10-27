@@ -39,13 +39,14 @@ public class SecurityConfig {
                 .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives(
                         "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:")))
                 .authorizeHttpRequests(a -> a
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers("/error", "/actuator/health", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/push/chave-publica").permitAll()
-                        .requestMatchers("/api/auditoria/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("ADMIN", "USUARIO")
-                        .requestMatchers("/api/push/**", "/api/agendamentos/simulacao").hasAnyRole("ADMIN", "USUARIO")
-                        .requestMatchers("/api/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/push/chave-publica").permitAll()
+                        .requestMatchers("/api/v1/publico/**").permitAll()
+                        .requestMatchers("/api/v1/auditoria/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/**").hasAnyRole("ADMIN", "USUARIO")
+                        .requestMatchers("/api/v1/push/**", "/api/v1/agendamentos/simulacao").hasAnyRole("ADMIN", "USUARIO")
+                        .requestMatchers("/api/v1/**").hasRole("ADMIN")
                         .anyRequest().denyAll())
                 .addFilterBefore(jwtFiltro, UsernamePasswordAuthenticationFilter.class);
         return http.build();
