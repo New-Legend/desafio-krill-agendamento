@@ -1,14 +1,16 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { api } from '../api'
 import { baixarArquivo, deIso, fmtData, fmtMin, fmtMoeda, hoje, isoData, somarDias } from '../utils'
 import { useEnvio } from '../composables/useEnvio'
 import { useNotificar } from '../composables/useNotificar'
 import SeletorCd from '../components/SeletorCd.vue'
 
+const route = useRoute()
 const notificar = useNotificar()
 const { enviando, enviar } = useEnvio()
-const filtro = reactive({ inicio: deIso(somarDias(hoje(), -7)), fim: deIso(hoje()), cdId: null })
+const filtro = reactive({ inicio: deIso(route.query.inicio || somarDias(hoje(), -7)), fim: deIso(route.query.fim || hoje()), cdId: null })
 const dados = ref(null)
 const carregando = ref(false)
 const SITUACAO = { AGUARDANDO: ['Aguardando', 'info'], EM_DESCARGA: ['Em descarga', 'warn'], NO_PRAZO: ['No prazo', 'success'], ACIMA_DO_PREVISTO: ['Acima do previsto', 'danger'] }
@@ -37,6 +39,7 @@ function exportar() {
     }
   })
 }
+onMounted(() => { if (route.query.inicio) buscar() })
 </script>
 
 <template>

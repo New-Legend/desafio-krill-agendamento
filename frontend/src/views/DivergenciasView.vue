@@ -1,6 +1,6 @@
 <script setup>
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api'
 import { baixarArquivo, deIso, fmtData, hoje, isoData, somarDias } from '../utils'
 import { useEnvio } from '../composables/useEnvio'
@@ -8,9 +8,10 @@ import { useNotificar } from '../composables/useNotificar'
 import SeletorCd from '../components/SeletorCd.vue'
 
 const router = useRouter()
+const route = useRoute()
 const notificar = useNotificar()
 const { enviando, enviar } = useEnvio()
-const filtro = reactive({ inicio: deIso(somarDias(hoje(), -30)), fim: deIso(hoje()), fornecedor: '', cdId: null })
+const filtro = reactive({ inicio: deIso(route.query.inicio || somarDias(hoje(), -30)), fim: deIso(route.query.fim || hoje()), fornecedor: '', cdId: null })
 const lista = ref([])
 const buscou = ref(false)
 const carregando = ref(false)
@@ -46,6 +47,7 @@ function exportar() {
     }
   })
 }
+onMounted(() => { if (route.query.inicio) buscar() })
 defineExpose({ buscar, exportar, filtro })
 </script>
 
