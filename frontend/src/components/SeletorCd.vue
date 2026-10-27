@@ -18,7 +18,7 @@ onMounted(async () => {
 <template>
   <div v-if="cds.length > 1" class="campo">
     <label :for="props.inputId">CD</label>
-    <Select v-model="modelo" :input-id="props.inputId" :options="[...(props.todos ? [{ id: null, codigo: '', nome: 'Todos os CDs' }] : []), ...cds]"
-            :option-label="(c) => (c.codigo ? `${c.codigo} · ${c.nome}` : c.nome)" option-value="id" />
+    <Select v-model="modelo" style="min-width: 210px" :input-id="props.inputId" :options="[...(props.todos ? [{ id: null, codigo: '', nome: 'Todos os CDs' }] : []), ...cds]"
+            :option-label="(c) => (c.codigo ? `${c.codigo} · ${c.nome}` : c.nome)" option-value="id" :placeholder="props.todos ? 'Todos os CDs' : 'CD padrão'" />
   </div>
 </template>

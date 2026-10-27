@@ -34,7 +34,7 @@ function imprimir() {
   <div v-if="c && !c.reciboNumero" class="painel vazio">Cobrança #{{ c.id }} ainda não foi paga — o recibo é emitido no recebimento.</div>
   <article v-else-if="c" class="painel recibo">
     <header class="recibo-topo">
-      <div class="marca"><img src="/img/rede-krill-logo.png" alt="Rede Krill" width="570" height="528" /><div><strong>Rede Krill · Centro de Distribuição</strong><small>Recibo de pagamento de paletes</small></div></div>
+      <div class="recibo-marca"><img src="/img/rede-krill-logo.png" alt="Rede Krill" width="570" height="528" /><div><strong>Rede Krill · Centro de Distribuição</strong><small>Recibo de pagamento de paletes</small></div></div>
       <div class="numero"><strong>{{ c.reciboNumero }}</strong><small>{{ fmtDataHora(c.pagoEm) }}</small></div>
     </header>
     <p class="texto">
@@ -55,11 +55,11 @@ function imprimir() {
 <style scoped>
 .recibo { max-width: 760px; }
 .recibo-topo { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--cor-texto); padding-bottom: 8px; margin-bottom: 14px; }
-.marca { display: flex; align-items: center; gap: 10px; }
-.marca div, .numero { display: flex; flex-direction: column; gap: 4px; }
+.recibo-marca { display: flex; align-items: center; gap: 10px; }
+.recibo-marca div, .numero { display: flex; flex-direction: column; gap: 4px; }
 .numero { align-items: flex-end; }
 .numero strong { font-size: 18px; font-variant-numeric: tabular-nums; }
-.marca img { height: 54px; width: auto; aspect-ratio: 570 / 528; object-fit: contain; }
+.recibo-marca img { height: 54px; width: auto; aspect-ratio: 570 / 528; object-fit: contain; }
 .texto { line-height: 1.6; }
 .legal { font-size: 12px; }
 .assinatura { display: flex; flex-direction: column; align-items: center; margin: 40px auto 0; width: 300px; gap: 4px; }
