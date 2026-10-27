@@ -21,9 +21,18 @@ public class FornecedorLinkUseCase {
     private final GeradorToken tokens;
     private final AuditoriaUseCase auditoria;
     private final Transacao transacao;
+    private final java.time.Clock clock;
+    static final int DIAS_DISPONIVEIS = 14;
 
     public FornecedorLinkUseCase(AgendamentoRepositorio agendamentos, AgendamentoUseCase agendamentoUseCase,
                                  GeradorToken tokens, AuditoriaUseCase auditoria, Transacao transacao) {
+        this(agendamentos, agendamentoUseCase, tokens, auditoria, transacao, java.time.Clock.systemDefaultZone());
+    }
+
+    public FornecedorLinkUseCase(AgendamentoRepositorio agendamentos, AgendamentoUseCase agendamentoUseCase,
+                                 GeradorToken tokens, AuditoriaUseCase auditoria, Transacao transacao,
+                                 java.time.Clock clock) {
+        this.clock = clock;
         this.agendamentos = agendamentos;
         this.agendamentoUseCase = agendamentoUseCase;
         this.tokens = tokens;
@@ -41,6 +50,20 @@ public class FornecedorLinkUseCase {
 
     public AgendamentoDetalhe informarVeiculo(String token, String placa, String motorista, String ip) {
         return alterar(token, ip, "VEICULO_FORNECEDOR", a -> a.atualizarPeloFornecedor(placa, motorista));
+    }
+
+    /** Ocupação dos próximos 14 dias no CD do agendamento, para o fornecedor escolher outra data. */
+    public java.util.List<br.com.redekrill.agendamento.domain.model.OcupacaoDia> disponibilidade(String token) {
+        Agendamento a = porToken(token);
+        java.time.LocalDate hoje = java.time.LocalDate.now(clock);
+        return agendamentoUseCase.ocupacaoPeriodo(hoje, hoje.plusDays(DIAS_DISPONIVEIS - 1), a.getCdId());
+    }
+
+    /** Fornecedor remarca pelo link: só faixas com vaga (excesso de capacidade é decisão do CD). */
+    public AgendamentoDetalhe reagendar(String token, java.time.LocalDate data, Long faixaId, String ip) {
+        Agendamento a = porToken(token);
+        return agendamentoUseCase.reagendar(a.getId(), data, faixaId,
+                new Solicitante("fornecedor:" + a.getEmailFornecedor(), ip), false).agendamento();
     }
 
     private AgendamentoDetalhe alterar(String token, String ip, String acao, java.util.function.Consumer<Agendamento> op) {

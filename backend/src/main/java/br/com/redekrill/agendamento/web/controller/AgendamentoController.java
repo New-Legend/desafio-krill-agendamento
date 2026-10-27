@@ -63,7 +63,7 @@ public class AgendamentoController {
     public CriacaoResp criar(@Valid @RequestBody Requisicoes.CriarAgendamento b, HttpServletRequest req) {
         ResultadoAgendamento r = useCase.criar(new NovoAgendamento(b.data(), b.faixaHorariaId(), b.idPedido(),
                 b.fornecedor(), b.emailFornecedor(), b.tipoCaminhaoId(), b.tipoPaletizacaoId(),
-                b.quantidadePaletes(), b.observacao()), Requisicao.solicitante(req));
+                b.quantidadePaletes(), b.observacao(), b.cdId(), b.fornecedorId()), Requisicao.solicitante(req));
         return new CriacaoResp(AgendamentoResp.de(r.agendamento()), r.alertas(), r.linkFornecedor());
     }
 
@@ -75,8 +75,9 @@ public class AgendamentoController {
             @RequestParam(required = false) StatusAgendamento status,
             @RequestParam(required = false) String fornecedor,
             @RequestParam(required = false) Long idPedido,
-            @RequestParam(required = false) Long faixaHorariaId) {
-        return useCase.listar(new FiltroAgendamento(inicio, fim, status, fornecedor, idPedido, faixaHorariaId))
+            @RequestParam(required = false) Long faixaHorariaId,
+            @RequestParam(required = false) Long cdId) {
+        return useCase.listar(new FiltroAgendamento(inicio, fim, status, fornecedor, idPedido, faixaHorariaId, cdId, false))
                 .stream().map(AgendamentoResp::de).toList();
     }
 
@@ -93,26 +94,36 @@ public class AgendamentoController {
         return AgendamentoResp.de(useCase.cancelar(id, b.motivo(), Requisicao.solicitante(req)));
     }
 
+    @PatchMapping("/agendamentos/{id}/data")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Remarca data/faixa (o CD pode exceder a capacidade; devolve alertas)")
+    public CriacaoResp reagendar(@PathVariable Long id, @Valid @RequestBody Requisicoes.Reagendar b, HttpServletRequest req) {
+        ResultadoAgendamento r = useCase.reagendar(id, b.data(), b.faixaHorariaId(), Requisicao.solicitante(req), true);
+        return new CriacaoResp(AgendamentoResp.de(r.agendamento()), r.alertas(), null);
+    }
+
     @PostMapping("/agendamentos/simulacao")
     @Operation(summary = "Pré-visualiza ocupação e alertas antes de confirmar")
     public SimulacaoResp simular(@Valid @RequestBody Requisicoes.Simular b) {
         Simulacao s = useCase.simular(b.data(), b.faixaHorariaId(), b.tipoPaletizacaoId(),
-                b.quantidadePaletes() == null ? 0 : b.quantidadePaletes());
+                b.quantidadePaletes() == null ? 0 : b.quantidadePaletes(), b.cdId());
         return new SimulacaoResp(OcupacaoDiaResp.de(s.ocupacaoAtual()), s.paletesEquivalentes(), s.alertas());
     }
 
     @GetMapping("/ocupacao")
     @Operation(summary = "Ocupação de um dia (total e por faixa)")
-    public OcupacaoDiaResp ocupacao(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data) {
-        return OcupacaoDiaResp.de(useCase.ocupacaoDoDia(data));
+    public OcupacaoDiaResp ocupacao(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data,
+                                    @RequestParam(required = false) Long cdId) {
+        return OcupacaoDiaResp.de(useCase.ocupacaoDoDia(data, cdId));
     }
 
     @GetMapping("/ocupacao/periodo")
     @Operation(summary = "Ocupação diária em um período")
     public List<OcupacaoDiaResp> ocupacaoPeriodo(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim) {
-        return useCase.ocupacaoPeriodo(inicio, fim).stream().map(OcupacaoDiaResp::de).toList();
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim,
+            @RequestParam(required = false) Long cdId) {
+        return useCase.ocupacaoPeriodo(inicio, fim, cdId).stream().map(OcupacaoDiaResp::de).toList();
     }
 
     @GetMapping(value = "/relatorios/agendamentos.csv", produces = "text/csv")
@@ -145,7 +156,7 @@ public class AgendamentoController {
     }
 
     /** Escapa campo CSV e neutraliza injeção de fórmula (=, +, -, @). */
-    static String csv(String v) {
+    public static String csv(String v) {
         if (v == null) return "";
         String s = v.replace("\r", " ").replace("\n", " ");
         if (!s.isEmpty() && "=+-@".indexOf(s.charAt(0)) >= 0) s = "'" + s;

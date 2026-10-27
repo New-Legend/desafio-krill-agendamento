@@ -7,6 +7,8 @@ import br.com.redekrill.agendamento.application.dto.ResultadoAgendamento;
 import br.com.redekrill.agendamento.application.dto.Simulacao;
 import br.com.redekrill.agendamento.application.dto.Solicitante;
 import br.com.redekrill.agendamento.application.port.AgendamentoRepositorio;
+import br.com.redekrill.agendamento.application.port.CentroDistribuicaoRepositorio;
+import br.com.redekrill.agendamento.application.port.FornecedorRepositorio;
 import br.com.redekrill.agendamento.application.port.FaixaHorariaRepositorio;
 import br.com.redekrill.agendamento.application.port.GeradorToken;
 import br.com.redekrill.agendamento.application.port.NotificadorEmail;
@@ -19,6 +21,8 @@ import br.com.redekrill.agendamento.domain.exception.RecursoNaoEncontradoExcepti
 import br.com.redekrill.agendamento.domain.exception.RegraNegocioException;
 import br.com.redekrill.agendamento.domain.model.Agendamento;
 import br.com.redekrill.agendamento.domain.model.AlertaCapacidade;
+import br.com.redekrill.agendamento.domain.model.CentroDistribuicao;
+import br.com.redekrill.agendamento.domain.model.Fornecedor;
 import br.com.redekrill.agendamento.domain.model.FaixaHoraria;
 import br.com.redekrill.agendamento.domain.model.OcupacaoDia;
 import br.com.redekrill.agendamento.domain.model.TipoCaminhao;
@@ -55,12 +59,26 @@ public class AgendamentoUseCase {
     private final GeradorToken tokens;
     private final String urlPublica;
     private final CalculadoraOcupacao calculadora = new CalculadoraOcupacao();
+    private final CentroDistribuicaoRepositorio cds;
+    private final FornecedorRepositorio fornecedores;
 
     public AgendamentoUseCase(AgendamentoRepositorio agendamentos, FaixaHorariaRepositorio faixas,
                               TipoCaminhaoRepositorio caminhoes, TipoPaletizacaoRepositorio paletizacoes,
                               ParametroRepositorio parametros, NotificadorEmail email, NotificadorPush push,
                               AuditoriaUseCase auditoria, Transacao transacao, Clock clock,
                               GeradorToken tokens, String urlPublica) {
+        this(agendamentos, faixas, caminhoes, paletizacoes, parametros, email, push, auditoria, transacao, clock, tokens,
+                urlPublica, null, null);
+    }
+
+    public AgendamentoUseCase(AgendamentoRepositorio agendamentos, FaixaHorariaRepositorio faixas,
+                              TipoCaminhaoRepositorio caminhoes, TipoPaletizacaoRepositorio paletizacoes,
+                              ParametroRepositorio parametros, NotificadorEmail email, NotificadorPush push,
+                              AuditoriaUseCase auditoria, Transacao transacao, Clock clock,
+                              GeradorToken tokens, String urlPublica, CentroDistribuicaoRepositorio cds,
+                              FornecedorRepositorio fornecedores) {
+        this.cds = cds;
+        this.fornecedores = fornecedores;
         this.agendamentos = agendamentos;
         this.faixas = faixas;
         this.caminhoes = caminhoes;
@@ -86,7 +104,9 @@ public class AgendamentoUseCase {
             Agendamento novo = Agendamento.novo(cmd.data(), faixa, cmd.idPedido(), cmd.fornecedor(),
                     cmd.emailFornecedor(), caminhao, paletizacao, cmd.quantidadePaletes(), cmd.observacao(),
                     solicitante.usuario(), OffsetDateTime.now(clock));
-            OcupacaoDia atual = ocupacaoDoDia(cmd.data());
+            Long cdId = centroAtivo(cmd.cdId());
+            novo.vincular(cdId, fornecedorAtivo(cmd.fornecedorId()));
+            OcupacaoDia atual = ocupacaoDoDia(cmd.data(), cdId);
             List<AlertaCapacidade> alertas = calculadora.avaliar(atual, faixa.id(), novo.getPaletesEquivalentes());
             String token = tokens.novo();
             novo.definirTokenFornecedor(tokens.hash(token));
@@ -96,6 +116,7 @@ public class AgendamentoUseCase {
             det.put("faixa", faixa.descricao());
             det.put("idPedido", salvo.getIdPedido());
             det.put("fornecedor", salvo.getFornecedor());
+            det.put("cd", salvo.getCdId());
             det.put("paletesEquivalentes", salvo.getPaletesEquivalentes());
             det.put("alertas", alertas.stream().map(AlertaCapacidade::mensagem).toList());
             auditoria.registrar(solicitante, "CRIAR", "AGENDAMENTO", salvo.getId(), det);
@@ -165,30 +186,102 @@ public class AgendamentoUseCase {
     }
 
     public OcupacaoDia ocupacaoDoDia(LocalDate data) {
-        return calculadora.calcular(data, parametros.obter().capacidadeDiariaPaletes(),
-                faixas.listar().stream().filter(FaixaHoraria::ativo).toList(),
-                agendamentos.listarPorPeriodo(data, data));
+        return ocupacaoDoDia(data, null);
+    }
+
+    /** Ocupação do dia no CD informado (nulo = CD padrão), com as capacidades próprias do CD. */
+    public OcupacaoDia ocupacaoDoDia(LocalDate data, Long cdId) {
+        return ocupacaoPeriodoSemValidar(data, data, cdId).get(0);
     }
 
     public List<OcupacaoDia> ocupacaoPeriodo(LocalDate inicio, LocalDate fim) {
+        return ocupacaoPeriodo(inicio, fim, null);
+    }
+
+    public List<OcupacaoDia> ocupacaoPeriodo(LocalDate inicio, LocalDate fim, Long cdId) {
         if (inicio == null || fim == null) throw new RegraNegocioException("Informe início e fim do período");
         validarPeriodo(inicio, fim);
-        int capacidade = parametros.obter().capacidadeDiariaPaletes();
+        return ocupacaoPeriodoSemValidar(inicio, fim, cdId);
+    }
+
+    private List<OcupacaoDia> ocupacaoPeriodoSemValidar(LocalDate inicio, LocalDate fim, Long cdId) {
+        long cd = cdId == null ? Agendamento.CD_PADRAO : cdId;
+        CentroDistribuicao centro = cds == null ? null
+                : cds.buscarPorId(cd).orElseThrow(() -> new RecursoNaoEncontradoException("CD", cd));
+        int padrao = parametros.obter().capacidadeDiariaPaletes();
+        int capacidade = centro == null ? padrao : centro.capacidadeDia(padrao);
         List<FaixaHoraria> ativas = faixas.listar().stream().filter(FaixaHoraria::ativo).toList();
-        List<Agendamento> todos = agendamentos.listarPorPeriodo(inicio, fim);
+        if (centro != null) ativas = centro.ajustar(ativas);
+        List<FaixaHoraria> faixasCd = ativas;
+        List<Agendamento> todos = agendamentos.listarPorPeriodo(inicio, fim).stream()
+                .filter(a -> a.getCdId() == null || a.getCdId() == cd).toList();
         return inicio.datesUntil(fim.plusDays(1))
-                .map(d -> calculadora.calcular(d, capacidade, ativas, todos))
+                .map(d -> calculadora.calcular(d, capacidade, faixasCd, todos))
                 .toList();
     }
 
     /** Pré-visualiza os alertas de capacidade antes de confirmar (usado na tela de cadastro). */
     public Simulacao simular(LocalDate data, Long faixaId, Long paletizacaoId, int quantidade) {
+        return simular(data, faixaId, paletizacaoId, quantidade, null);
+    }
+
+    public Simulacao simular(LocalDate data, Long faixaId, Long paletizacaoId, int quantidade, Long cdId) {
         if (data == null) throw new RegraNegocioException("Data é obrigatória");
-        OcupacaoDia atual = ocupacaoDoDia(data);
+        OcupacaoDia atual = ocupacaoDoDia(data, cdId);
         int equivalentes = paletizacaoId == null || quantidade <= 0 ? Math.max(quantidade, 0)
                 : paletizacao(paletizacaoId).paletesEquivalentes(quantidade);
         return new Simulacao(atual, equivalentes,
                 faixaId == null && equivalentes == 0 ? List.of() : calculadora.avaliar(atual, faixaId, equivalentes));
+    }
+
+    /**
+     * Remarca data/faixa. O CD pode exceder a capacidade (só alerta); no link público o fornecedor
+     * só escolhe faixas com vaga ({@code permitirExcesso = false}).
+     */
+    public ResultadoAgendamento reagendar(Long id, LocalDate data, Long faixaId, Solicitante solicitante,
+                                          boolean permitirExcesso) {
+        ResultadoAgendamento r = transacao.executar(() -> {
+            if (data == null) throw new RegraNegocioException("Data é obrigatória");
+            agendamentos.bloquearDia(data);
+            Agendamento a = agendamentos.buscarPorId(id)
+                    .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento", id));
+            FaixaHoraria faixa = faixa(faixaId);
+            String de = a.getData() + " " + a.getFaixaHorariaId();
+            a.reagendar(data, faixa, OffsetDateTime.now(clock));
+            OcupacaoDia atual = ocupacaoDoDia(data, a.getCdId());
+            List<AlertaCapacidade> alertas = calculadora.avaliar(atual, faixa.id(), a.getPaletesEquivalentes());
+            if (!permitirExcesso && !alertas.isEmpty()) {
+                throw new RegraNegocioException("A faixa " + faixa.descricao() + " de " + data.format(BR)
+                        + " não tem vaga para " + a.getPaletesEquivalentes() + " paletes. Escolha outra.");
+            }
+            Agendamento salvo = agendamentos.salvar(a);
+            auditoria.registrar(solicitante, "REAGENDAR", "AGENDAMENTO", id, Map.of("de", de,
+                    "para", data + " " + faixa.id(), "alertas", alertas.stream().map(AlertaCapacidade::mensagem).toList()));
+            return new ResultadoAgendamento(detalhar(salvo), alertas, null);
+        });
+        Agendamento a = r.agendamento().agendamento();
+        push.notificarTodos("Agendamento remarcado", a.getFornecedor() + " · " + a.getData().format(BR) + " "
+                + r.agendamento().faixaDescricao(), "/agendamentos/" + a.getId());
+        if (!r.alertas().isEmpty()) {
+            push.notificarTodos("Capacidade excedida", r.alertas().stream().map(AlertaCapacidade::mensagem)
+                    .collect(Collectors.joining(" | ")), "/painel?data=" + a.getData());
+        }
+        return r;
+    }
+
+    private Long centroAtivo(Long cdId) {
+        if (cdId == null || cds == null) return cdId;
+        CentroDistribuicao c = cds.buscarPorId(cdId).orElseThrow(() -> new RecursoNaoEncontradoException("CD", cdId));
+        if (!c.ativo()) throw new RegraNegocioException("CD inativo");
+        return cdId;
+    }
+
+    private Long fornecedorAtivo(Long fornecedorId) {
+        if (fornecedorId == null || fornecedores == null) return fornecedorId;
+        Fornecedor f = fornecedores.buscarPorId(fornecedorId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Fornecedor", fornecedorId));
+        if (!f.ativo()) throw new RegraNegocioException("Fornecedor inativo");
+        return fornecedorId;
     }
 
     private void validarPeriodo(LocalDate inicio, LocalDate fim) {

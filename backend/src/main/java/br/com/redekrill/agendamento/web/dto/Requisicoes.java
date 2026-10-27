@@ -31,7 +31,62 @@ public final class Requisicoes {
             @NotNull(message = "Tipo de paletização é obrigatório") @Schema(example = "2") Long tipoPaletizacaoId,
             @NotNull(message = "Quantidade de paletes é obrigatória") @Min(value = 1, message = "Quantidade de paletes deve ser maior que zero")
             @Max(value = 10000, message = "Quantidade de paletes acima do permitido") @Schema(example = "22") Integer quantidadePaletes,
-            @Size(max = 500, message = "Observação deve ter no máximo 500 caracteres") String observacao) {
+            @Size(max = 500, message = "Observação deve ter no máximo 500 caracteres") String observacao,
+            @Schema(description = "CD de destino (padrão 1)", example = "1") Long cdId,
+            @Schema(description = "Fornecedor cadastrado (opcional)") Long fornecedorId) {
+    }
+
+    public record Reagendar(@NotNull(message = "Data é obrigatória") @Schema(example = "2026-11-05") LocalDate data,
+                            @NotNull(message = "Faixa horária é obrigatória") @Schema(example = "2") Long faixaHorariaId) {
+    }
+
+    public record CentroDistribuicao(@NotBlank @Size(max = 10) @Schema(example = "807") String codigo,
+                                     @NotBlank @Size(max = 80) @Schema(example = "CD Rede Krill 2") String nome,
+                                     @Size(max = 80) String cidade,
+                                     @Min(1) @Max(100000) @Schema(description = "Vazio = usa o parâmetro geral") Integer capacidadeDiariaPaletes,
+                                     @Min(1) @Max(100000) @Schema(description = "Vazio = usa a capacidade de cada faixa") Integer capacidadeFaixaPaletes,
+                                     Boolean ativo) {
+    }
+
+    public record Fornecedor(@NotBlank @Size(max = 18) @Schema(example = "11.222.333/0001-81") String cnpj,
+                             @NotBlank @Size(max = 80) @Schema(example = "Distribuidora Litoral Alimentos Ltda") String razaoSocial,
+                             @Size(max = 80) String nomeFantasia,
+                             @NotBlank @Email @Size(max = 80) @Schema(example = "agenda@litoralalimentos.com.br") String email,
+                             @Size(max = 20) String telefone, @Size(max = 80) String contato, Boolean ativo) {
+    }
+
+    public record Produto(@NotBlank @Size(max = 60) @Schema(example = "7891000100103") String codigo,
+                          @Size(max = 14) String ean, @NotBlank @Size(max = 120) String descricao,
+                          @Size(max = 6) String unidade,
+                          @jakarta.validation.constraints.DecimalMin("0") @Schema(example = "12.5") java.math.BigDecimal pesoBrutoKg,
+                          @Min(1) Integer itensPorPalete, Boolean ativo) {
+    }
+
+    public record PesoProduto(@jakarta.validation.constraints.DecimalMin("0") @Schema(example = "12.5") java.math.BigDecimal pesoBrutoKg,
+                              @Min(1) Integer itensPorPalete) {
+    }
+
+    public record ParametroDescarga(@NotNull @Min(1) @Max(1440) @Schema(example = "60") Integer minutosPrevistos,
+                                    @NotNull @Min(0) @Max(1440) @Schema(example = "30") Integer toleranciaEsperaMinutos,
+                                    @NotNull @jakarta.validation.constraints.DecimalMin("0") @Schema(example = "3.50") java.math.BigDecimal custoPorPalete) {
+    }
+
+    public record Cobranca(@NotBlank @Size(max = 80) @Schema(example = "Bebidas Vale Ltda") String fornecedor,
+                           @NotNull @Min(1) @Max(100000) @Schema(example = "20") Integer quantidade,
+                           @NotNull @jakarta.validation.constraints.DecimalMin("0") @Schema(example = "45.00") java.math.BigDecimal valorUnitario,
+                           @NotNull @Schema(example = "2026-11-10") LocalDate vencimento,
+                           @Size(max = 255) String observacao) {
+    }
+
+    public record Pagamento(@NotNull @Schema(example = "PIX") br.com.redekrill.agendamento.domain.model.CobrancaPalete.FormaPagamento forma) {
+    }
+
+    public record Movimento(LocalDate data,
+                            @NotNull @Schema(example = "ENVIO") br.com.redekrill.agendamento.domain.model.MovimentoPalete.Tipo tipo,
+                            Long cdId, @NotBlank @Size(max = 80) @Schema(example = "Loja 12 - Centro") String loja,
+                            @NotNull @Min(0) @Max(10000) Integer pbr, @NotNull @Min(0) @Max(10000) Integer chep,
+                            @NotNull @Min(0) @Max(10000) Integer chapatex, @NotNull @Min(0) @Max(10000) Integer descartaveis,
+                            @Size(max = 255) String observacao) {
     }
 
     public record Cancelar(@NotBlank(message = "Motivo do cancelamento é obrigatório")
@@ -39,7 +94,7 @@ public final class Requisicoes {
     }
 
     public record Simular(@NotNull LocalDate data, Long faixaHorariaId, Long tipoPaletizacaoId,
-                          @Min(0) @Max(10000) Integer quantidadePaletes) {
+                          @Min(0) @Max(10000) Integer quantidadePaletes, Long cdId) {
     }
 
     public record Parametro(@NotNull @Min(1) @Max(100000) Integer capacidadeDiariaPaletes,

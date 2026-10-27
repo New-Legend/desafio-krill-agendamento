@@ -25,7 +25,7 @@ public final class Respostas {
                                   OffsetDateTime canceladoEm, String motivoCancelamento, String placa, String motorista,
                                   OffsetDateTime chegadaEm, String conferente, OffsetDateTime inicioRecebimentoEm,
                                   OffsetDateTime fimRecebimentoEm, Integer paletesRecebidos, String divergencia,
-                                  String statusDescricao) {
+                                  String statusDescricao, Long cdId, Long fornecedorId) {
         public static AgendamentoResp de(AgendamentoDetalhe d) {
             Agendamento a = d.agendamento();
             return new AgendamentoResp(a.getId(), a.getData(), a.getFaixaHorariaId(), d.faixaDescricao(),
@@ -34,7 +34,8 @@ public final class Respostas {
                     a.getPaletesEquivalentes(), a.getObservacao(), a.getStatus(), a.getCriadoPor(),
                     a.getCriadoEm(), a.getCanceladoPor(), a.getCanceladoEm(), a.getMotivoCancelamento(), a.getPlaca(),
                     a.getMotorista(), a.getChegadaEm(), a.getConferente(), a.getInicioRecebimentoEm(),
-                    a.getFimRecebimentoEm(), a.getPaletesRecebidos(), a.getDivergencia(), a.getStatus().rotulo());
+                    a.getFimRecebimentoEm(), a.getPaletesRecebidos(), a.getDivergencia(), a.getStatus().rotulo(),
+                    a.getCdId(), a.getFornecedorId());
         }
     }
 
@@ -72,12 +73,13 @@ public final class Respostas {
     public record AgendamentoPublicoResp(Long id, LocalDate data, String faixaHoraria, Long idPedido, String fornecedor,
                                          String tipoCaminhao, String tipoPaletizacao, int quantidadePaletes,
                                          StatusAgendamento status, String statusDescricao, String placa, String motorista,
-                                         boolean editavel) {
+                                         boolean editavel, Long faixaHorariaId, int paletesEquivalentes) {
         public static AgendamentoPublicoResp de(AgendamentoDetalhe d) {
             Agendamento a = d.agendamento();
             return new AgendamentoPublicoResp(a.getId(), a.getData(), d.faixaDescricao(), a.getIdPedido(), a.getFornecedor(),
                     d.tipoCaminhao(), d.tipoPaletizacao(), a.getQuantidadePaletes(), a.getStatus(), a.getStatus().rotulo(),
-                    a.getPlaca(), a.getMotorista(), a.getStatus().antesDaChegada());
+                    a.getPlaca(), a.getMotorista(), a.getStatus().antesDaChegada(), a.getFaixaHorariaId(),
+                    a.getPaletesEquivalentes());
         }
     }
 

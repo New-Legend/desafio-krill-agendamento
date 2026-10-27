@@ -20,6 +20,17 @@ import br.com.redekrill.agendamento.application.usecase.ValePaleteUseCase;
 import br.com.redekrill.agendamento.application.port.GeradorToken;
 import br.com.redekrill.agendamento.application.port.PedidoCompraGateway;
 import br.com.redekrill.agendamento.application.port.ValePaleteRepositorio;
+import br.com.redekrill.agendamento.application.port.CentroDistribuicaoRepositorio;
+import br.com.redekrill.agendamento.application.port.CobrancaPaleteRepositorio;
+import br.com.redekrill.agendamento.application.port.FornecedorRepositorio;
+import br.com.redekrill.agendamento.application.port.MovimentoPaleteRepositorio;
+import br.com.redekrill.agendamento.application.port.NotaFiscalRepositorio;
+import br.com.redekrill.agendamento.application.port.ParametroDescargaRepositorio;
+import br.com.redekrill.agendamento.application.port.ProdutoRepositorio;
+import br.com.redekrill.agendamento.application.usecase.CadastroRecebimentoUseCase;
+import br.com.redekrill.agendamento.application.usecase.NotaFiscalUseCase;
+import br.com.redekrill.agendamento.application.usecase.PaleteFinanceiroUseCase;
+import br.com.redekrill.agendamento.application.usecase.RelatorioRecebimentoUseCase;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,8 +63,9 @@ public class UseCaseConfig {
                                           TipoCaminhaoRepositorio c, TipoPaletizacaoRepositorio t,
                                           ParametroRepositorio p, NotificadorEmail email, NotificadorPush push,
                                           AuditoriaUseCase a, Transacao tx, Clock clock, GeradorToken tokens,
-                                          @Value("${app.url-publica}") String urlPublica) {
-        return new AgendamentoUseCase(ag, f, c, t, p, email, push, a, tx, clock, tokens, urlPublica);
+                                          @Value("${app.url-publica}") String urlPublica,
+                                          CentroDistribuicaoRepositorio cds, FornecedorRepositorio fornecedores) {
+        return new AgendamentoUseCase(ag, f, c, t, p, email, push, a, tx, clock, tokens, urlPublica, cds, fornecedores);
     }
 
     @Bean
@@ -64,8 +76,8 @@ public class UseCaseConfig {
 
     @Bean
     FornecedorLinkUseCase fornecedorLinkUseCase(AgendamentoRepositorio ag, AgendamentoUseCase uc, GeradorToken tokens,
-                                                AuditoriaUseCase a, Transacao tx) {
-        return new FornecedorLinkUseCase(ag, uc, tokens, a, tx);
+                                                AuditoriaUseCase a, Transacao tx, Clock clock) {
+        return new FornecedorLinkUseCase(ag, uc, tokens, a, tx, clock);
     }
 
     @Bean
@@ -82,5 +94,32 @@ public class UseCaseConfig {
     @Bean
     PedidoCompraUseCase pedidoCompraUseCase(PedidoCompraGateway g, TipoPaletizacaoRepositorio t) {
         return new PedidoCompraUseCase(g, t);
+    }
+
+    @Bean
+    CadastroRecebimentoUseCase cadastroRecebimentoUseCase(CentroDistribuicaoRepositorio cds, FornecedorRepositorio f,
+                                                          ProdutoRepositorio p, ParametroDescargaRepositorio d,
+                                                          TipoCaminhaoRepositorio c, AuditoriaUseCase a, Transacao tx) {
+        return new CadastroRecebimentoUseCase(cds, f, p, d, c, a, tx);
+    }
+
+    @Bean
+    NotaFiscalUseCase notaFiscalUseCase(NotaFiscalRepositorio n, AgendamentoRepositorio ag, ProdutoRepositorio p,
+                                        FornecedorRepositorio f, AuditoriaUseCase a, Transacao tx, Clock clock) {
+        return new NotaFiscalUseCase(n, ag, p, f, a, tx, clock);
+    }
+
+    @Bean
+    RelatorioRecebimentoUseCase relatorioRecebimentoUseCase(AgendamentoUseCase uc, FaixaHorariaRepositorio f,
+                                                            ParametroDescargaRepositorio d, NotaFiscalRepositorio n,
+                                                            ValePaleteRepositorio v, CobrancaPaleteRepositorio c, Clock clock) {
+        return new RelatorioRecebimentoUseCase(uc, f, d, n, v, c, clock);
+    }
+
+    @Bean
+    PaleteFinanceiroUseCase paleteFinanceiroUseCase(ValePaleteRepositorio v, CobrancaPaleteRepositorio c,
+                                                    MovimentoPaleteRepositorio m, CentroDistribuicaoRepositorio cds,
+                                                    AuditoriaUseCase a, Transacao tx, Clock clock) {
+        return new PaleteFinanceiroUseCase(v, c, m, cds, a, tx, clock);
     }
 }

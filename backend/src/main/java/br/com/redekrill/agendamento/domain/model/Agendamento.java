@@ -13,8 +13,8 @@ public class Agendamento {
     private static final Pattern EMAIL = Pattern.compile("^[\\w.+-]+@[\\w-]+(\\.[\\w-]+)+$");
 
     private final Long id;
-    private final LocalDate data;
-    private final Long faixaHorariaId;
+    private LocalDate data;
+    private Long faixaHorariaId;
     private final Long idPedido;
     private final String fornecedor;
     private final String emailFornecedor;
@@ -38,7 +38,10 @@ public class Agendamento {
     private Integer paletesRecebidos;
     private String divergencia;
     private String tokenFornecedorHash;
+    private Long cdId;
+    private Long fornecedorId;
 
+    public static final long CD_PADRAO = 1L;
     private static final Pattern PLACA = Pattern.compile("^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$");
 
     private Agendamento(Builder b) {
@@ -68,6 +71,8 @@ public class Agendamento {
         this.paletesRecebidos = b.paletesRecebidos;
         this.divergencia = b.divergencia;
         this.tokenFornecedorHash = b.tokenFornecedorHash;
+        this.cdId = b.cdId == null ? CD_PADRAO : b.cdId;
+        this.fornecedorId = b.fornecedorId;
         validar();
     }
 
@@ -253,12 +258,41 @@ public class Agendamento {
     public Integer getPaletesRecebidos() { return paletesRecebidos; }
     public String getDivergencia() { return divergencia; }
     public String getTokenFornecedorHash() { return tokenFornecedorHash; }
+    public Long getCdId() { return cdId; }
+    public Long getFornecedorId() { return fornecedorId; }
+
+    /** Define o CD e o fornecedor cadastrado (opcional) do agendamento. */
+    public void vincular(Long cd, Long fornecedor) {
+        if (cd != null) this.cdId = cd;
+        this.fornecedorId = fornecedor;
+    }
+
+    /**
+     * Remarcação de data/faixa (pelo CD ou pelo fornecedor no link público). Só antes da chegada,
+     * nunca para o passado; a confirmação anterior é desfeita.
+     */
+    public void reagendar(LocalDate novaData, FaixaHoraria faixa, OffsetDateTime agora) {
+        exigirAntesDaChegada("remarcar");
+        if (novaData == null) throw new RegraNegocioException("Data é obrigatória");
+        if (faixa == null || !faixa.ativo()) throw new RegraNegocioException("Faixa horária inválida ou inativa");
+        if (novaData.isBefore(agora.toLocalDate())) {
+            throw new RegraNegocioException("Data do agendamento não pode ser anterior a hoje");
+        }
+        if (novaData.equals(data) && faixa.id().equals(faixaHorariaId)) {
+            throw new RegraNegocioException("Escolha uma data ou faixa diferente da atual");
+        }
+        this.data = novaData;
+        this.faixaHorariaId = faixa.id();
+        this.status = StatusAgendamento.AGENDADO;
+    }
 
     public static Builder builder() {
         return new Builder();
     }
 
     public static final class Builder {
+        private Long cdId;
+        private Long fornecedorId;
         private Long id;
         private LocalDate data;
         private Long faixaHorariaId;
@@ -312,6 +346,8 @@ public class Agendamento {
         public Builder paletesRecebidos(Integer v) { paletesRecebidos = v; return this; }
         public Builder divergencia(String v) { divergencia = v; return this; }
         public Builder tokenFornecedorHash(String v) { tokenFornecedorHash = v; return this; }
+        public Builder cdId(Long v) { cdId = v; return this; }
+        public Builder fornecedorId(Long v) { fornecedorId = v; return this; }
         public Agendamento build() { return new Agendamento(this); }
     }
 }

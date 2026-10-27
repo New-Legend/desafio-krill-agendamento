@@ -50,6 +50,8 @@ public class AgendamentoRepositorioJpa implements AgendamentoRepositorio {
             if (f.fim() != null) p.add(cb.lessThanOrEqualTo(root.get("data"), f.fim()));
             if (f.status() != null) p.add(cb.equal(root.get("status"), f.status()));
             if (f.idPedido() != null) p.add(cb.equal(root.get("idPedido"), f.idPedido()));
+            if (f.cdId() != null) p.add(cb.equal(root.get("cdId"), f.cdId()));
+            if (f.divergentes()) p.add(cb.isNotNull(root.get("divergencia")));
             if (f.faixaHorariaId() != null) p.add(cb.equal(root.get("faixaHorariaId"), f.faixaHorariaId()));
             if (f.fornecedor() != null && !f.fornecedor().isBlank()) {
                 p.add(cb.like(cb.lower(root.get("fornecedor")), "%" + f.fornecedor().trim().toLowerCase() + "%"));
@@ -100,6 +102,8 @@ public class AgendamentoRepositorioJpa implements AgendamentoRepositorio {
         e.paletesRecebidos = a.getPaletesRecebidos();
         e.divergencia = a.getDivergencia();
         e.tokenFornecedorHash = a.getTokenFornecedorHash();
+        e.cdId = a.getCdId();
+        e.fornecedorId = a.getFornecedorId();
         return e;
     }
 
@@ -112,6 +116,6 @@ public class AgendamentoRepositorioJpa implements AgendamentoRepositorio {
                 .canceladoEm(e.canceladoEm).motivoCancelamento(e.motivoCancelamento).placa(e.placa).motorista(e.motorista)
                 .chegadaEm(e.chegadaEm).conferente(e.conferente).inicioRecebimentoEm(e.inicioRecebimentoEm)
                 .fimRecebimentoEm(e.fimRecebimentoEm).paletesRecebidos(e.paletesRecebidos).divergencia(e.divergencia)
-                .tokenFornecedorHash(e.tokenFornecedorHash).build();
+                .tokenFornecedorHash(e.tokenFornecedorHash).cdId(e.cdId).fornecedorId(e.fornecedorId).build();
     }
 }

@@ -62,4 +62,8 @@ public class AgendamentoEntity {
     public String divergencia;
     @Column(name = "token_fornecedor_hash")
     public String tokenFornecedorHash;
+    @Column(name = "cd_id")
+    public Long cdId;
+    @Column(name = "fornecedor_id")
+    public Long fornecedorId;
 }

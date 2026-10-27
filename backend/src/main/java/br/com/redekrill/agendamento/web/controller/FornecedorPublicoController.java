@@ -47,4 +47,17 @@ public class FornecedorPublicoController {
                                           HttpServletRequest req) {
         return AgendamentoPublicoResp.de(useCase.informarVeiculo(token, b.placa(), b.motorista(), Requisicao.ip(req)));
     }
+
+    @GetMapping("/disponibilidade")
+    @Operation(summary = "Ocupação dos próximos 14 dias no CD do agendamento (para remarcar)")
+    public java.util.List<br.com.redekrill.agendamento.web.dto.Respostas.OcupacaoDiaResp> disponibilidade(@PathVariable String token) {
+        return useCase.disponibilidade(token).stream().map(br.com.redekrill.agendamento.web.dto.Respostas.OcupacaoDiaResp::de).toList();
+    }
+
+    @PutMapping("/reagendamento")
+    @Operation(summary = "Fornecedor escolhe outra data/faixa (apenas faixas com vaga)")
+    public AgendamentoPublicoResp reagendar(@PathVariable String token, @Valid @RequestBody Requisicoes.Reagendar b,
+                                            HttpServletRequest req) {
+        return AgendamentoPublicoResp.de(useCase.reagendar(token, b.data(), b.faixaHorariaId(), Requisicao.ip(req)));
+    }
 }
