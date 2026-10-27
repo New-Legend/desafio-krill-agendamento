@@ -18,4 +18,6 @@ public interface AgendamentoRepositorio {
 
     /** Serializa criações concorrentes no mesmo dia (lock transacional) para o cálculo de ocupação ser consistente. */
     void bloquearDia(LocalDate data);
+
+    Optional<Agendamento> buscarPorTokenHash(String hash);
 }

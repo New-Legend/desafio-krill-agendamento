@@ -61,6 +61,11 @@ public class AgendamentoRepositorioJpa implements AgendamentoRepositorio {
     }
 
     @Override
+    public Optional<Agendamento> buscarPorTokenHash(String hash) {
+        return jpa.findByTokenFornecedorHash(hash).map(AgendamentoRepositorioJpa::paraDominio);
+    }
+
+    @Override
     public void bloquearDia(LocalDate data) {
         em.createNativeQuery("select 1 from pg_advisory_xact_lock(?1)")
                 .setParameter(1, 7_000_000L + data.toEpochDay())
@@ -86,6 +91,15 @@ public class AgendamentoRepositorioJpa implements AgendamentoRepositorio {
         e.canceladoPor = a.getCanceladoPor();
         e.canceladoEm = a.getCanceladoEm();
         e.motivoCancelamento = a.getMotivoCancelamento();
+        e.placa = a.getPlaca();
+        e.motorista = a.getMotorista();
+        e.chegadaEm = a.getChegadaEm();
+        e.conferente = a.getConferente();
+        e.inicioRecebimentoEm = a.getInicioRecebimentoEm();
+        e.fimRecebimentoEm = a.getFimRecebimentoEm();
+        e.paletesRecebidos = a.getPaletesRecebidos();
+        e.divergencia = a.getDivergencia();
+        e.tokenFornecedorHash = a.getTokenFornecedorHash();
         return e;
     }
 
@@ -95,6 +109,9 @@ public class AgendamentoRepositorioJpa implements AgendamentoRepositorio {
                 .tipoPaletizacaoId(e.tipoPaletizacaoId).quantidadePaletes(e.quantidadePaletes)
                 .paletesEquivalentes(e.paletesEquivalentes).observacao(e.observacao).status(e.status)
                 .criadoPor(e.criadoPor).criadoEm(e.criadoEm).canceladoPor(e.canceladoPor)
-                .canceladoEm(e.canceladoEm).motivoCancelamento(e.motivoCancelamento).build();
+                .canceladoEm(e.canceladoEm).motivoCancelamento(e.motivoCancelamento).placa(e.placa).motorista(e.motorista)
+                .chegadaEm(e.chegadaEm).conferente(e.conferente).inicioRecebimentoEm(e.inicioRecebimentoEm)
+                .fimRecebimentoEm(e.fimRecebimentoEm).paletesRecebidos(e.paletesRecebidos).divergencia(e.divergencia)
+                .tokenFornecedorHash(e.tokenFornecedorHash).build();
     }
 }

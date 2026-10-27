@@ -29,6 +29,17 @@ public class Agendamento {
     private String canceladoPor;
     private OffsetDateTime canceladoEm;
     private String motivoCancelamento;
+    private String placa;
+    private String motorista;
+    private OffsetDateTime chegadaEm;
+    private String conferente;
+    private OffsetDateTime inicioRecebimentoEm;
+    private OffsetDateTime fimRecebimentoEm;
+    private Integer paletesRecebidos;
+    private String divergencia;
+    private String tokenFornecedorHash;
+
+    private static final Pattern PLACA = Pattern.compile("^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$");
 
     private Agendamento(Builder b) {
         this.id = b.id;
@@ -48,6 +59,15 @@ public class Agendamento {
         this.canceladoPor = b.canceladoPor;
         this.canceladoEm = b.canceladoEm;
         this.motivoCancelamento = b.motivoCancelamento;
+        this.placa = b.placa;
+        this.motorista = b.motorista;
+        this.chegadaEm = b.chegadaEm;
+        this.conferente = b.conferente;
+        this.inicioRecebimentoEm = b.inicioRecebimentoEm;
+        this.fimRecebimentoEm = b.fimRecebimentoEm;
+        this.paletesRecebidos = b.paletesRecebidos;
+        this.divergencia = b.divergencia;
+        this.tokenFornecedorHash = b.tokenFornecedorHash;
         validar();
     }
 
@@ -101,6 +121,7 @@ public class Agendamento {
         if (status == StatusAgendamento.CANCELADO) {
             throw new RegraNegocioException("Agendamento já está cancelado");
         }
+        exigirAntesDaChegada("cancelar");
         if (motivo == null || motivo.isBlank()) {
             throw new RegraNegocioException("Motivo do cancelamento é obrigatório");
         }
@@ -110,8 +131,100 @@ public class Agendamento {
         this.motivoCancelamento = motivo.trim();
     }
 
+    /** Fornecedor (pelo link) ou CD confirma que a entrega vai acontecer. */
+    public void confirmar() {
+        exigirStatus(StatusAgendamento.AGENDADO, "confirmar");
+        this.status = StatusAgendamento.CONFIRMADO;
+    }
+
+    /** Portaria: caminhão chegou ao pátio. */
+    public void registrarChegada(String placa, String motorista, OffsetDateTime agora) {
+        exigirAntesDaChegada("registrar chegada");
+        this.placa = normalizarPlaca(placa, true);
+        this.motorista = textoOpcional(motorista, 80, "Motorista");
+        this.chegadaEm = agora;
+        this.status = StatusAgendamento.CHEGOU;
+    }
+
+    public void iniciarRecebimento(String conferente, OffsetDateTime agora) {
+        exigirStatus(StatusAgendamento.CHEGOU, "iniciar o recebimento");
+        if (conferente == null || conferente.isBlank()) throw new RegraNegocioException("Informe o conferente");
+        this.conferente = textoOpcional(conferente, 80, "Conferente");
+        this.inicioRecebimentoEm = agora;
+        this.status = StatusAgendamento.EM_RECEBIMENTO;
+    }
+
+    /** Conclui a conferência; divergência (falta, sobra, avaria) é registrada sem bloquear. */
+    public void concluirRecebimento(Integer paletesRecebidos, String divergencia, OffsetDateTime agora) {
+        exigirStatus(StatusAgendamento.EM_RECEBIMENTO, "concluir o recebimento");
+        if (paletesRecebidos == null || paletesRecebidos < 0) throw new RegraNegocioException("Informe os paletes recebidos");
+        this.paletesRecebidos = paletesRecebidos;
+        String div = textoOpcional(divergencia, 255, "Divergência");
+        if (div == null && paletesRecebidos != quantidadePaletes) {
+            div = "Paletes recebidos (" + paletesRecebidos + ") diferente do agendado (" + quantidadePaletes + ")";
+        }
+        this.divergencia = div;
+        this.fimRecebimentoEm = agora;
+        this.status = StatusAgendamento.RECEBIDO;
+    }
+
+    public void marcarNaoCompareceu(String usuario, String motivo, OffsetDateTime agora) {
+        exigirAntesDaChegada("marcar não comparecimento");
+        if (data.isAfter(agora.toLocalDate())) {
+            throw new RegraNegocioException("Só é possível marcar não comparecimento no dia ou após a data agendada");
+        }
+        this.status = StatusAgendamento.NAO_COMPARECEU;
+        this.canceladoPor = usuario;
+        this.canceladoEm = agora;
+        this.motivoCancelamento = motivo == null || motivo.isBlank() ? "Fornecedor não compareceu" : motivo.trim();
+    }
+
+    /** Dados que o fornecedor pode ajustar pelo link público antes da chegada. */
+    public void atualizarPeloFornecedor(String placa, String motorista) {
+        exigirAntesDaChegada("alterar pelo link do fornecedor");
+        this.placa = normalizarPlaca(placa, false);
+        this.motorista = textoOpcional(motorista, 80, "Motorista");
+    }
+
+    public void definirTokenFornecedor(String hash) {
+        this.tokenFornecedorHash = hash;
+    }
+
+    public boolean divergente() {
+        return divergencia != null;
+    }
+
+    public static String normalizarPlaca(String raw, boolean obrigatoria) {
+        String p = raw == null ? "" : raw.toUpperCase().replaceAll("[^A-Z0-9]", "");
+        if (p.isEmpty()) {
+            if (obrigatoria) throw new RegraNegocioException("Informe a placa do veículo");
+            return null;
+        }
+        if (!PLACA.matcher(p).matches()) throw new RegraNegocioException("Placa inválida: " + raw);
+        return p;
+    }
+
+    private static String textoOpcional(String v, int max, String campo) {
+        if (v == null || v.isBlank()) return null;
+        String t = v.trim();
+        if (t.length() > max) throw new RegraNegocioException(campo + " deve ter no máximo " + max + " caracteres");
+        return t;
+    }
+
+    private void exigirStatus(StatusAgendamento esperado, String acao) {
+        if (status != esperado) {
+            throw new RegraNegocioException("Não é possível " + acao + " com status " + status.rotulo());
+        }
+    }
+
+    private void exigirAntesDaChegada(String acao) {
+        if (!status.antesDaChegada()) {
+            throw new RegraNegocioException("Não é possível " + acao + " com status " + status.rotulo());
+        }
+    }
+
     public boolean ativo() {
-        return status == StatusAgendamento.AGENDADO;
+        return status.ocupaCapacidade();
     }
 
     public Long getId() { return id; }
@@ -131,6 +244,15 @@ public class Agendamento {
     public String getCanceladoPor() { return canceladoPor; }
     public OffsetDateTime getCanceladoEm() { return canceladoEm; }
     public String getMotivoCancelamento() { return motivoCancelamento; }
+    public String getPlaca() { return placa; }
+    public String getMotorista() { return motorista; }
+    public OffsetDateTime getChegadaEm() { return chegadaEm; }
+    public String getConferente() { return conferente; }
+    public OffsetDateTime getInicioRecebimentoEm() { return inicioRecebimentoEm; }
+    public OffsetDateTime getFimRecebimentoEm() { return fimRecebimentoEm; }
+    public Integer getPaletesRecebidos() { return paletesRecebidos; }
+    public String getDivergencia() { return divergencia; }
+    public String getTokenFornecedorHash() { return tokenFornecedorHash; }
 
     public static Builder builder() {
         return new Builder();
@@ -154,6 +276,15 @@ public class Agendamento {
         private String canceladoPor;
         private OffsetDateTime canceladoEm;
         private String motivoCancelamento;
+        private String placa;
+        private String motorista;
+        private OffsetDateTime chegadaEm;
+        private String conferente;
+        private OffsetDateTime inicioRecebimentoEm;
+        private OffsetDateTime fimRecebimentoEm;
+        private Integer paletesRecebidos;
+        private String divergencia;
+        private String tokenFornecedorHash;
 
         public Builder id(Long v) { id = v; return this; }
         public Builder data(LocalDate v) { data = v; return this; }
@@ -172,6 +303,15 @@ public class Agendamento {
         public Builder canceladoPor(String v) { canceladoPor = v; return this; }
         public Builder canceladoEm(OffsetDateTime v) { canceladoEm = v; return this; }
         public Builder motivoCancelamento(String v) { motivoCancelamento = v; return this; }
+        public Builder placa(String v) { placa = v; return this; }
+        public Builder motorista(String v) { motorista = v; return this; }
+        public Builder chegadaEm(OffsetDateTime v) { chegadaEm = v; return this; }
+        public Builder conferente(String v) { conferente = v; return this; }
+        public Builder inicioRecebimentoEm(OffsetDateTime v) { inicioRecebimentoEm = v; return this; }
+        public Builder fimRecebimentoEm(OffsetDateTime v) { fimRecebimentoEm = v; return this; }
+        public Builder paletesRecebidos(Integer v) { paletesRecebidos = v; return this; }
+        public Builder divergencia(String v) { divergencia = v; return this; }
+        public Builder tokenFornecedorHash(String v) { tokenFornecedorHash = v; return this; }
         public Agendamento build() { return new Agendamento(this); }
     }
 }

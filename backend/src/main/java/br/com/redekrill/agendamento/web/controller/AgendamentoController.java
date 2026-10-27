@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/v1")
 @Tag(name = "Agendamentos")
 public class AgendamentoController {
 
@@ -64,7 +64,7 @@ public class AgendamentoController {
         ResultadoAgendamento r = useCase.criar(new NovoAgendamento(b.data(), b.faixaHorariaId(), b.idPedido(),
                 b.fornecedor(), b.emailFornecedor(), b.tipoCaminhaoId(), b.tipoPaletizacaoId(),
                 b.quantidadePaletes(), b.observacao()), Requisicao.solicitante(req));
-        return new CriacaoResp(AgendamentoResp.de(r.agendamento()), r.alertas());
+        return new CriacaoResp(AgendamentoResp.de(r.agendamento()), r.alertas(), r.linkFornecedor());
     }
 
     @GetMapping("/agendamentos")

@@ -22,18 +22,23 @@ public final class Respostas {
                                   Long tipoPaletizacaoId, String tipoPaletizacao, int quantidadePaletes,
                                   int paletesEquivalentes, String observacao, StatusAgendamento status,
                                   String criadoPor, OffsetDateTime criadoEm, String canceladoPor,
-                                  OffsetDateTime canceladoEm, String motivoCancelamento) {
+                                  OffsetDateTime canceladoEm, String motivoCancelamento, String placa, String motorista,
+                                  OffsetDateTime chegadaEm, String conferente, OffsetDateTime inicioRecebimentoEm,
+                                  OffsetDateTime fimRecebimentoEm, Integer paletesRecebidos, String divergencia,
+                                  String statusDescricao) {
         public static AgendamentoResp de(AgendamentoDetalhe d) {
             Agendamento a = d.agendamento();
             return new AgendamentoResp(a.getId(), a.getData(), a.getFaixaHorariaId(), d.faixaDescricao(),
                     a.getIdPedido(), a.getFornecedor(), a.getEmailFornecedor(), a.getTipoCaminhaoId(),
                     d.tipoCaminhao(), a.getTipoPaletizacaoId(), d.tipoPaletizacao(), a.getQuantidadePaletes(),
                     a.getPaletesEquivalentes(), a.getObservacao(), a.getStatus(), a.getCriadoPor(),
-                    a.getCriadoEm(), a.getCanceladoPor(), a.getCanceladoEm(), a.getMotivoCancelamento());
+                    a.getCriadoEm(), a.getCanceladoPor(), a.getCanceladoEm(), a.getMotivoCancelamento(), a.getPlaca(),
+                    a.getMotorista(), a.getChegadaEm(), a.getConferente(), a.getInicioRecebimentoEm(),
+                    a.getFimRecebimentoEm(), a.getPaletesRecebidos(), a.getDivergencia(), a.getStatus().rotulo());
         }
     }
 
-    public record CriacaoResp(AgendamentoResp agendamento, List<AlertaCapacidade> alertas) {
+    public record CriacaoResp(AgendamentoResp agendamento, List<AlertaCapacidade> alertas, String linkFornecedor) {
     }
 
     public record OcupacaoFaixaResp(Long faixaHorariaId, String descricao, LocalTime horaInicio, LocalTime horaFim,
@@ -60,6 +65,33 @@ public final class Respostas {
                             boolean ativo) {
         public static FaixaResp de(FaixaHoraria f) {
             return new FaixaResp(f.id(), f.descricao(), f.horaInicio(), f.horaFim(), f.capacidadePaletes(), f.ativo());
+        }
+    }
+
+    /** Visão pública (link do fornecedor): sem dados internos de auditoria. */
+    public record AgendamentoPublicoResp(Long id, LocalDate data, String faixaHoraria, Long idPedido, String fornecedor,
+                                         String tipoCaminhao, String tipoPaletizacao, int quantidadePaletes,
+                                         StatusAgendamento status, String statusDescricao, String placa, String motorista,
+                                         boolean editavel) {
+        public static AgendamentoPublicoResp de(AgendamentoDetalhe d) {
+            Agendamento a = d.agendamento();
+            return new AgendamentoPublicoResp(a.getId(), a.getData(), d.faixaDescricao(), a.getIdPedido(), a.getFornecedor(),
+                    d.tipoCaminhao(), d.tipoPaletizacao(), a.getQuantidadePaletes(), a.getStatus(), a.getStatus().rotulo(),
+                    a.getPlaca(), a.getMotorista(), a.getStatus().antesDaChegada());
+        }
+    }
+
+    public record ValePaleteResp(Long id, String codigo, Long agendamentoId, LocalDate data, String fornecedor, String placa,
+                                 String motorista, br.com.redekrill.agendamento.domain.model.ValePalete.Quantidades entregues,
+                                 br.com.redekrill.agendamento.domain.model.ValePalete.Quantidades devolvidos,
+                                 br.com.redekrill.agendamento.domain.model.ValePalete.Quantidades saldo, String status,
+                                 String observacao, br.com.redekrill.agendamento.domain.model.ValePalete.Assinatura assinaturaMotorista,
+                                 br.com.redekrill.agendamento.domain.model.ValePalete.Assinatura assinaturaConferente,
+                                 String criadoPor, OffsetDateTime criadoEm) {
+        public static ValePaleteResp de(br.com.redekrill.agendamento.domain.model.ValePalete v) {
+            return new ValePaleteResp(v.getId(), v.getCodigo(), v.getAgendamentoId(), v.getData(), v.getFornecedor(), v.getPlaca(),
+                    v.getMotorista(), v.getEntregues(), v.getDevolvidos(), v.saldo(), v.getStatus().name(), v.getObservacao(),
+                    v.getAssinaturaMotorista(), v.getAssinaturaConferente(), v.getCriadoPor(), v.getCriadoEm());
         }
     }
 

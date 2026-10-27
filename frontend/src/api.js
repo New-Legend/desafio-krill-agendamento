@@ -29,7 +29,7 @@ export async function api(caminho, { method = 'GET', body, params, blob = false 
   if (sessao.atual?.token) headers.Authorization = `Bearer ${sessao.atual.token}`
   let resp
   try {
-    resp = await fetch(`/api${caminho}${query(params)}`, {
+    resp = await fetch(`/api/v1${caminho}${query(params)}`, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body)

@@ -8,6 +8,7 @@ import br.com.redekrill.agendamento.application.dto.Simulacao;
 import br.com.redekrill.agendamento.application.dto.Solicitante;
 import br.com.redekrill.agendamento.application.port.AgendamentoRepositorio;
 import br.com.redekrill.agendamento.application.port.FaixaHorariaRepositorio;
+import br.com.redekrill.agendamento.application.port.GeradorToken;
 import br.com.redekrill.agendamento.application.port.NotificadorEmail;
 import br.com.redekrill.agendamento.application.port.NotificadorPush;
 import br.com.redekrill.agendamento.application.port.ParametroRepositorio;
@@ -51,12 +52,15 @@ public class AgendamentoUseCase {
     private final AuditoriaUseCase auditoria;
     private final Transacao transacao;
     private final Clock clock;
+    private final GeradorToken tokens;
+    private final String urlPublica;
     private final CalculadoraOcupacao calculadora = new CalculadoraOcupacao();
 
     public AgendamentoUseCase(AgendamentoRepositorio agendamentos, FaixaHorariaRepositorio faixas,
                               TipoCaminhaoRepositorio caminhoes, TipoPaletizacaoRepositorio paletizacoes,
                               ParametroRepositorio parametros, NotificadorEmail email, NotificadorPush push,
-                              AuditoriaUseCase auditoria, Transacao transacao, Clock clock) {
+                              AuditoriaUseCase auditoria, Transacao transacao, Clock clock,
+                              GeradorToken tokens, String urlPublica) {
         this.agendamentos = agendamentos;
         this.faixas = faixas;
         this.caminhoes = caminhoes;
@@ -67,6 +71,8 @@ public class AgendamentoUseCase {
         this.auditoria = auditoria;
         this.transacao = transacao;
         this.clock = clock;
+        this.tokens = tokens;
+        this.urlPublica = urlPublica.endsWith("/") ? urlPublica.substring(0, urlPublica.length() - 1) : urlPublica;
     }
 
     public ResultadoAgendamento criar(NovoAgendamento cmd, Solicitante solicitante) {
@@ -82,6 +88,8 @@ public class AgendamentoUseCase {
                     solicitante.usuario(), OffsetDateTime.now(clock));
             OcupacaoDia atual = ocupacaoDoDia(cmd.data());
             List<AlertaCapacidade> alertas = calculadora.avaliar(atual, faixa.id(), novo.getPaletesEquivalentes());
+            String token = tokens.novo();
+            novo.definirTokenFornecedor(tokens.hash(token));
             Agendamento salvo = agendamentos.salvar(novo);
             Map<String, Object> det = new HashMap<>();
             det.put("data", salvo.getData().toString());
@@ -92,10 +100,11 @@ public class AgendamentoUseCase {
             det.put("alertas", alertas.stream().map(AlertaCapacidade::mensagem).toList());
             auditoria.registrar(solicitante, "CRIAR", "AGENDAMENTO", salvo.getId(), det);
             return new ResultadoAgendamento(
-                    new AgendamentoDetalhe(salvo, faixa.descricao(), caminhao.nome(), paletizacao.nome()), alertas);
+                    new AgendamentoDetalhe(salvo, faixa.descricao(), caminhao.nome(), paletizacao.nome()), alertas,
+                    linkFornecedor(token));
         });
         Agendamento a = resultado.agendamento().agendamento();
-        email.enviarConfirmacao(resultado.agendamento());
+        email.enviarConfirmacao(resultado.agendamento(), resultado.linkFornecedor());
         push.notificarTodos("Novo agendamento",
                 a.getFornecedor() + " · " + a.getData().format(BR) + " " + resultado.agendamento().faixaDescricao()
                         + " · " + a.getPaletesEquivalentes() + " paletes", "/agendamentos/" + a.getId());
@@ -123,6 +132,23 @@ public class AgendamentoUseCase {
                 a.getFornecedor() + " · " + a.getData().format(BR) + " " + detalhe.faixaDescricao(),
                 "/agendamentos/" + a.getId());
         return detalhe;
+    }
+
+    /** Gera um novo link para o fornecedor (o anterior deixa de funcionar). */
+    public String gerarNovoLinkFornecedor(Long id, Solicitante solicitante) {
+        return transacao.executar(() -> {
+            Agendamento a = agendamentos.buscarPorId(id)
+                    .orElseThrow(() -> new RecursoNaoEncontradoException("Agendamento", id));
+            String token = tokens.novo();
+            a.definirTokenFornecedor(tokens.hash(token));
+            agendamentos.salvar(a);
+            auditoria.registrar(solicitante, "GERAR_LINK", "AGENDAMENTO", id, Map.of());
+            return linkFornecedor(token);
+        });
+    }
+
+    String linkFornecedor(String token) {
+        return urlPublica + "/fornecedor/" + token;
     }
 
     public AgendamentoDetalhe buscar(Long id) {
@@ -174,7 +200,7 @@ public class AgendamentoUseCase {
         }
     }
 
-    private AgendamentoDetalhe detalhar(Agendamento a) {
+    AgendamentoDetalhe detalhar(Agendamento a) {
         return detalhar(a, porId(faixas.listar(), FaixaHoraria::id), porId(caminhoes.listar(), TipoCaminhao::id),
                 porId(paletizacoes.listar(), TipoPaletizacao::id));
     }

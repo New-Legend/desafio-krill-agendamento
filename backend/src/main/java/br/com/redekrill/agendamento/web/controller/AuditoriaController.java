@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 
 @RestController
-@RequestMapping("/api/auditoria")
+@RequestMapping("/api/v1/auditoria")
 @PreAuthorize("hasRole('ADMIN')")
 @Tag(name = "Auditoria")
 public class AuditoriaController {

@@ -48,4 +48,18 @@ public class AgendamentoEntity {
     public OffsetDateTime canceladoEm;
     @Column(name = "motivo_cancelamento")
     public String motivoCancelamento;
+    public String placa;
+    public String motorista;
+    @Column(name = "chegada_em")
+    public OffsetDateTime chegadaEm;
+    public String conferente;
+    @Column(name = "inicio_recebimento_em")
+    public OffsetDateTime inicioRecebimentoEm;
+    @Column(name = "fim_recebimento_em")
+    public OffsetDateTime fimRecebimentoEm;
+    @Column(name = "paletes_recebidos")
+    public Integer paletesRecebidos;
+    public String divergencia;
+    @Column(name = "token_fornecedor_hash")
+    public String tokenFornecedorHash;
 }

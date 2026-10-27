@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/push")
+@RequestMapping("/api/v1/push")
 @Tag(name = "Notificações push")
 public class PushController {
 

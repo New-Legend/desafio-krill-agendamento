@@ -16,6 +16,13 @@ import br.com.redekrill.agendamento.application.port.TipoPaletizacaoRepositorio;
 import br.com.redekrill.agendamento.application.port.Transacao;
 import br.com.redekrill.agendamento.application.usecase.AgendamentoUseCase;
 import br.com.redekrill.agendamento.application.usecase.AuditoriaUseCase;
+import br.com.redekrill.agendamento.application.usecase.DashboardUseCase;
+import br.com.redekrill.agendamento.application.usecase.FornecedorLinkUseCase;
+import br.com.redekrill.agendamento.application.usecase.PedidoCompraUseCase;
+import br.com.redekrill.agendamento.application.usecase.RecebimentoUseCase;
+import br.com.redekrill.agendamento.application.usecase.ValePaleteUseCase;
+import br.com.redekrill.agendamento.application.port.ValePaleteRepositorio;
+import br.com.redekrill.agendamento.domain.model.ValePalete;
 import br.com.redekrill.agendamento.domain.exception.RecursoNaoEncontradoException;
 import br.com.redekrill.agendamento.domain.exception.RegraNegocioException;
 import br.com.redekrill.agendamento.domain.model.Agendamento;
@@ -89,13 +96,26 @@ class AgendamentoUseCaseTest {
             return op.get();
         }
     };
+    static final br.com.redekrill.agendamento.application.port.GeradorToken TOKENS = new br.com.redekrill.agendamento.application.port.GeradorToken() {
+        int n;
+
+        @Override
+        public String novo() {
+            return "token-de-teste-com-tamanho-suficiente-" + (++n);
+        }
+
+        @Override
+        public String hash(String token) {
+            return "h:" + token;
+        }
+    };
     final List<Agendamento> banco = new ArrayList<>();
     AgendamentoUseCase useCase;
 
     @BeforeEach
     void setUp() {
         useCase = new AgendamentoUseCase(agendamentos, faixas, caminhoes, paletizacoes, parametros, email, push,
-                new AuditoriaUseCase(auditoriaRepo, CLOCK), tx, CLOCK);
+                new AuditoriaUseCase(auditoriaRepo, CLOCK), tx, CLOCK, TOKENS, "http://app.local/");
         when(parametros.obter()).thenReturn(ParametroCapacidade.PADRAO);
         when(faixas.listar()).thenReturn(List.of(F1, F2, F_INATIVA));
         when(faixas.buscarPorId(1L)).thenReturn(Optional.of(F1));
@@ -115,7 +135,9 @@ class AgendamentoUseCaseTest {
                     .quantidadePaletes(a.getQuantidadePaletes()).paletesEquivalentes(a.getPaletesEquivalentes())
                     .observacao(a.getObservacao()).status(a.getStatus()).criadoPor(a.getCriadoPor())
                     .criadoEm(a.getCriadoEm()).canceladoPor(a.getCanceladoPor()).canceladoEm(a.getCanceladoEm())
-                    .motivoCancelamento(a.getMotivoCancelamento()).build();
+                    .motivoCancelamento(a.getMotivoCancelamento()).placa(a.getPlaca()).motorista(a.getMotorista())
+                    .chegadaEm(a.getChegadaEm()).conferente(a.getConferente()).paletesRecebidos(a.getPaletesRecebidos())
+                    .divergencia(a.getDivergencia()).tokenFornecedorHash(a.getTokenFornecedorHash()).build();
             banco.removeIf(b -> b.getId().equals(salvo.getId()));
             banco.add(salvo);
             return salvo;
@@ -138,7 +160,9 @@ class AgendamentoUseCaseTest {
         InOrder ordem = inOrder(agendamentos);
         ordem.verify(agendamentos).bloquearDia(DIA);
         ordem.verify(agendamentos).salvar(any());
-        verify(email).enviarConfirmacao(r.agendamento());
+        verify(email).enviarConfirmacao(eq(r.agendamento()), org.mockito.ArgumentMatchers.startsWith("http://app.local/fornecedor/token-de-teste"));
+        assertThat(r.linkFornecedor()).startsWith("http://app.local/fornecedor/");
+        assertThat(banco.get(0).getTokenFornecedorHash()).startsWith("h:");
         verify(push).notificarTodos(eq("Novo agendamento"), contains("Fornecedor Alfa"), eq("/agendamentos/1"));
         verify(push, never()).notificarTodos(eq("Capacidade excedida"), anyString(), anyString());
         ArgumentCaptor<br.com.redekrill.agendamento.application.dto.RegistroAuditoria> aud =
@@ -189,7 +213,7 @@ class AgendamentoUseCaseTest {
                 .isInstanceOf(RecursoNaoEncontradoException.class);
         assertThatThrownBy(() -> useCase.criar(new NovoAgendamento(DIA, 1L, 1L, "F", "a@b.com", 1L, 9L, 1, null), ADMIN))
                 .isInstanceOf(RecursoNaoEncontradoException.class);
-        verify(email, never()).enviarConfirmacao(any());
+        verify(email, never()).enviarConfirmacao(any(), any());
     }
 
     @Test
@@ -278,5 +302,170 @@ class AgendamentoUseCaseTest {
         assertThat(c.getValue().entidadeId()).isNull();
         assertThat(c.getValue().ip()).isNull();
         assertThat(c.getValue().sucesso()).isFalse();
+    }
+
+    // ---------- porte Gestão CD: fluxo operacional, link do fornecedor, dashboard, ERP, vale-palete
+
+    RecebimentoUseCase recebimento() {
+        return new RecebimentoUseCase(agendamentos, useCase, new AuditoriaUseCase(auditoriaRepo, CLOCK), push, tx, CLOCK);
+    }
+
+    RecebimentoUseCase.Comando acao(RecebimentoUseCase.Acao a) {
+        return new RecebimentoUseCase.Comando(a, "abc-1d23", "João", "Carlos", 48, null, null);
+    }
+
+    @Test
+    void fluxoPortariaConferenciaComDivergencia() {
+        Long id = useCase.criar(cmd(1, 1, 50), ADMIN).agendamento().agendamento().getId();
+        RecebimentoUseCase r = recebimento();
+        assertThat(r.executar(id, acao(RecebimentoUseCase.Acao.CONFIRMAR), ADMIN).agendamento().getStatus()).isEqualTo(StatusAgendamento.CONFIRMADO);
+        AgendamentoDetalhe chegou = r.executar(id, acao(RecebimentoUseCase.Acao.CHEGADA), ADMIN);
+        assertThat(chegou.agendamento().getPlaca()).isEqualTo("ABC1D23");
+        verify(push).notificarTodos(eq("Caminhão na portaria"), contains("ABC1D23"), anyString());
+        assertThatThrownBy(() -> useCase.cancelar(id, "x", ADMIN)).hasMessageContaining("Chegou");
+        r.executar(id, acao(RecebimentoUseCase.Acao.INICIAR), ADMIN);
+        AgendamentoDetalhe fim = r.executar(id, acao(RecebimentoUseCase.Acao.CONCLUIR), ADMIN);
+        assertThat(fim.agendamento().getStatus()).isEqualTo(StatusAgendamento.RECEBIDO);
+        assertThat(fim.agendamento().getDivergencia()).contains("48");
+        verify(push).notificarTodos(eq("Recebimento com divergência"), anyString(), anyString());
+        assertThatThrownBy(() -> r.executar(id, null, ADMIN)).isInstanceOf(RegraNegocioException.class);
+        assertThatThrownBy(() -> r.executar(99L, acao(RecebimentoUseCase.Acao.CONFIRMAR), ADMIN)).isInstanceOf(RecursoNaoEncontradoException.class);
+    }
+
+    @Test
+    void concluirSemDivergenciaENaoComparecimento() {
+        RecebimentoUseCase r = recebimento();
+        Long id = useCase.criar(cmd(1, 1, 48), ADMIN).agendamento().agendamento().getId();
+        r.executar(id, acao(RecebimentoUseCase.Acao.CHEGADA), ADMIN);
+        r.executar(id, acao(RecebimentoUseCase.Acao.INICIAR), ADMIN);
+        assertThat(r.executar(id, acao(RecebimentoUseCase.Acao.CONCLUIR), ADMIN).agendamento().divergente()).isFalse();
+        Long id2 = useCase.criar(cmd(1, 1, 10), ADMIN).agendamento().agendamento().getId();
+        assertThatThrownBy(() -> r.executar(id2, acao(RecebimentoUseCase.Acao.NAO_COMPARECEU), ADMIN)).hasMessageContaining("dia");
+    }
+
+    @Test
+    void linkDoFornecedor() {
+        ResultadoAgendamento criado = useCase.criar(cmd(1, 1, 10), ADMIN);
+        String token = criado.linkFornecedor().substring(criado.linkFornecedor().lastIndexOf('/') + 1);
+        when(agendamentos.buscarPorTokenHash(any())).thenAnswer(i -> banco.stream()
+                .filter(b -> i.getArgument(0).equals(b.getTokenFornecedorHash())).findFirst());
+        FornecedorLinkUseCase f = new FornecedorLinkUseCase(agendamentos, useCase, TOKENS, new AuditoriaUseCase(auditoriaRepo, CLOCK), tx);
+        assertThat(f.consultar(token).agendamento().getFornecedor()).isEqualTo("Fornecedor Alfa");
+        assertThat(f.confirmar(token, "1.1.1.1").agendamento().getStatus()).isEqualTo(StatusAgendamento.CONFIRMADO);
+        assertThat(f.informarVeiculo(token, "BRA2E19", "Ana", "1.1.1.1").agendamento().getMotorista()).isEqualTo("Ana");
+        assertThatThrownBy(() -> f.consultar("curto")).isInstanceOf(RecursoNaoEncontradoException.class);
+        assertThatThrownBy(() -> f.consultar(null)).isInstanceOf(RecursoNaoEncontradoException.class);
+        assertThatThrownBy(() -> f.consultar("x".repeat(30))).isInstanceOf(RecursoNaoEncontradoException.class);
+        String novo = useCase.gerarNovoLinkFornecedor(criado.agendamento().agendamento().getId(), ADMIN);
+        assertThat(novo).isNotEqualTo(criado.linkFornecedor());
+        assertThatThrownBy(() -> f.consultar(token)).isInstanceOf(RecursoNaoEncontradoException.class);
+        assertThatThrownBy(() -> useCase.gerarNovoLinkFornecedor(99L, ADMIN)).isInstanceOf(RecursoNaoEncontradoException.class);
+    }
+
+    @Test
+    void dashboard() {
+        useCase.criar(cmd(1, 2, 70), ADMIN); // faixa excedida
+        Long cancel = useCase.criar(cmd(2, 1, 10), ADMIN).agendamento().agendamento().getId();
+        useCase.cancelar(cancel, "Sem nota", ADMIN);
+        when(agendamentos.listar(any())).thenAnswer(i -> {
+            FiltroAgendamento f = i.getArgument(0);
+            return banco.stream().filter(b -> f.status() == null || b.getStatus() == f.status())
+                    .filter(b -> !b.getData().isBefore(f.inicio()) && !b.getData().isAfter(f.fim())).toList();
+        });
+        DashboardUseCase d = new DashboardUseCase(useCase, CLOCK);
+        DashboardUseCase.Resumo r = d.resumo(DIA);
+        assertThat(r.ocupacao().paletesOcupados()).isEqualTo(140);
+        assertThat(r.porStatus().get(StatusAgendamento.AGENDADO)).isEqualTo(1);
+        assertThat(r.porStatus().get(StatusAgendamento.CANCELADO)).isEqualTo(1);
+        assertThat(r.proximos()).hasSize(1);
+        assertThat(r.alertas()).extracting(DashboardUseCase.Alerta::tipo).contains("CAPACIDADE_FAIXA", "CANCELAMENTO");
+        assertThat(r.proximosDias()).hasSize(7);
+        assertThat(d.resumo(null).data()).isEqualTo(LocalDate.now(CLOCK));
+    }
+
+    @Test
+    void pedidoDoErp() {
+        br.com.redekrill.agendamento.application.port.PedidoCompraGateway gw = new br.com.redekrill.agendamento.application.port.PedidoCompraGateway() {
+            @Override
+            public Optional<br.com.redekrill.agendamento.domain.model.PedidoCompraErp> buscarPedido(Long id) {
+                if (id == 1L) return Optional.of(new br.com.redekrill.agendamento.domain.model.PedidoCompraErp(1L, "APROVADO", "F", null, "f@f.com", 10, false, null, null, "teste"));
+                if (id == 2L) return Optional.of(new br.com.redekrill.agendamento.domain.model.PedidoCompraErp(2L, null, "G", null, null, null, null, null, null, "teste"));
+                return Optional.empty();
+            }
+
+            @Override
+            public String provedor() {
+                return "teste";
+            }
+        };
+        PedidoCompraUseCase p = new PedidoCompraUseCase(gw, paletizacoes);
+        assertThat(p.consultar(1L).tipoPaletizacaoId()).isEqualTo(2L);
+        assertThat(p.consultar(2L).tipoPaletizacaoId()).isNull();
+        assertThat(p.consultar(1L).provedor()).isEqualTo("teste");
+        assertThatThrownBy(() -> p.consultar(3L)).isInstanceOf(RecursoNaoEncontradoException.class);
+        assertThatThrownBy(() -> p.consultar(null)).isInstanceOf(RegraNegocioException.class);
+        assertThatThrownBy(() -> p.consultar(0L)).isInstanceOf(RegraNegocioException.class);
+    }
+
+    @Test
+    void valePalete() {
+        java.util.Map<Long, ValePalete> vales = new java.util.HashMap<>();
+        ValePaleteRepositorio repo = new ValePaleteRepositorio() {
+            long seq;
+
+            @Override
+            public ValePalete salvar(ValePalete v) {
+                Long id = v.getId() == null ? (long) vales.size() + 1 : v.getId();
+                ValePalete s = new ValePalete(id, v.getCodigo(), v.getAgendamentoId(), v.getData(), v.getFornecedor(), v.getPlaca(),
+                        v.getMotorista(), v.getEntregues(), v.getDevolvidos(), v.getStatus(), v.getObservacao(),
+                        v.getAssinaturaMotorista(), v.getAssinaturaConferente(), v.getCriadoPor(), v.getCriadoEm());
+                vales.put(id, s);
+                return s;
+            }
+
+            @Override
+            public Optional<ValePalete> buscarPorId(Long id) {
+                return Optional.ofNullable(vales.get(id));
+            }
+
+            @Override
+            public Optional<ValePalete> buscarPorCodigo(String c) {
+                return vales.values().stream().filter(v -> v.getCodigo().equals(c)).findFirst();
+            }
+
+            @Override
+            public List<ValePalete> listar(LocalDate i, LocalDate f, ValePalete.Status s, String forn) {
+                return List.copyOf(vales.values());
+            }
+
+            @Override
+            public long proximaSequencia() {
+                return ++seq;
+            }
+        };
+        ValePaleteUseCase uc = new ValePaleteUseCase(repo, agendamentos, new AuditoriaUseCase(auditoriaRepo, CLOCK), tx, CLOCK);
+        Long agId = useCase.criar(cmd(1, 1, 10), ADMIN).agendamento().agendamento().getId();
+        ValePalete v = uc.emitir(new ValePaleteUseCase.NovoVale(agId, null, null, null, null,
+                new ValePalete.Quantidades(10, 2, 0, 0), "obs"), ADMIN);
+        assertThat(v.getCodigo()).isEqualTo("VP-20261102-0001");
+        assertThat(v.getFornecedor()).isEqualTo("Fornecedor Alfa");
+        ValePalete v2 = uc.emitir(new ValePaleteUseCase.NovoVale(null, DIA, "Outro", "BRA2E19", "Zé",
+                new ValePalete.Quantidades(1, 0, 0, 0), null), ADMIN);
+        assertThat(v2.getPlaca()).isEqualTo("BRA2E19");
+        assertThatThrownBy(() -> uc.emitir(new ValePaleteUseCase.NovoVale(99L, null, null, null, null,
+                new ValePalete.Quantidades(1, 0, 0, 0), null), ADMIN)).isInstanceOf(RecursoNaoEncontradoException.class);
+        String png = "data:image/png;base64,AAAA";
+        uc.assinar(v.getId(), ValePalete.Assinante.MOTORISTA, "João", png, ADMIN);
+        assertThat(uc.assinar(v.getId(), ValePalete.Assinante.CONFERENTE, "Carlos", png, ADMIN).getStatus()).isEqualTo(ValePalete.Status.ASSINADO);
+        assertThat(uc.refazerAssinatura(v.getId(), ValePalete.Assinante.CONFERENTE, ADMIN).getStatus()).isEqualTo(ValePalete.Status.PENDENTE);
+        assertThat(uc.registrarDevolucao(v.getId(), new ValePalete.Quantidades(5, 0, 0, 0), ADMIN).saldo().total()).isEqualTo(7);
+        assertThat(uc.registrarDevolucao(v.getId(), new ValePalete.Quantidades(5, 2, 0, 0), ADMIN).getStatus()).isEqualTo(ValePalete.Status.QUITADO);
+        assertThat(uc.cancelar(v2.getId(), ADMIN).getStatus()).isEqualTo(ValePalete.Status.CANCELADO);
+        assertThat(uc.buscarPorCodigo(" vp-20261102-0001 ").getId()).isEqualTo(v.getId());
+        assertThatThrownBy(() -> uc.buscarPorCodigo(null)).isInstanceOf(RecursoNaoEncontradoException.class);
+        assertThat(uc.listar(DIA, DIA, null, null)).hasSize(2);
+        assertThatThrownBy(() -> uc.listar(DIA, DIA.minusDays(1), null, null)).isInstanceOf(RegraNegocioException.class);
+        assertThat(uc.listar(null, null, null, null)).hasSize(2);
+        assertThatThrownBy(() -> uc.buscar(50L)).isInstanceOf(RecursoNaoEncontradoException.class);
     }
 }

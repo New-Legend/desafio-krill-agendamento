@@ -33,10 +33,10 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
 
     @Async
     @Override
-    public void enviarConfirmacao(AgendamentoDetalhe d) {
+    public void enviarConfirmacao(AgendamentoDetalhe d, String linkFornecedor) {
         Agendamento a = d.agendamento();
         enviar(a.getEmailFornecedor(), "Agendamento de entrega confirmado — Pedido " + a.getIdPedido(),
-                "Agendamento de entrega confirmado", d, "#0f7b3f");
+                "Agendamento de entrega confirmado", d, "#0f7b3f", linkFornecedor);
     }
 
     @Async
@@ -44,17 +44,17 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
     public void enviarCancelamento(AgendamentoDetalhe d) {
         Agendamento a = d.agendamento();
         enviar(a.getEmailFornecedor(), "Agendamento de entrega cancelado — Pedido " + a.getIdPedido(),
-                "Agendamento de entrega cancelado", d, "#b42318");
+                "Agendamento de entrega cancelado", d, "#b42318", null);
     }
 
-    private void enviar(String para, String assunto, String titulo, AgendamentoDetalhe d, String cor) {
+    private void enviar(String para, String assunto, String titulo, AgendamentoDetalhe d, String cor, String link) {
         try {
             MimeMessage msg = sender.createMimeMessage();
             MimeMessageHelper h = new MimeMessageHelper(msg, false, StandardCharsets.UTF_8.name());
             h.setFrom(remetente);
             h.setTo(para);
             h.setSubject(assunto);
-            h.setText(html(titulo, d, cor), true);
+            h.setText(html(titulo, d, cor, link), true);
             sender.send(msg);
             log.info("E-mail '{}' enviado para {}", assunto, para);
         } catch (Exception e) {
@@ -62,7 +62,7 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
         }
     }
 
-    static String html(String titulo, AgendamentoDetalhe d, String cor) {
+    static String html(String titulo, AgendamentoDetalhe d, String cor, String link) {
         Agendamento a = d.agendamento();
         StringBuilder sb = new StringBuilder();
         sb.append("<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#0f172a\">")
@@ -79,7 +79,12 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
         linha(sb, "Quantidade de paletes", String.valueOf(a.getQuantidadePaletes()));
         if (a.getObservacao() != null) linha(sb, "Observação", a.getObservacao());
         if (a.getMotivoCancelamento() != null) linha(sb, "Motivo do cancelamento", a.getMotivoCancelamento());
-        sb.append("</table><p style=\"color:#64748b;font-size:12px\">Apresente o ID do pedido na portaria.</p></div>");
+        sb.append("</table>");
+        if (link != null) {
+            sb.append("<p><a href=\"").append(HtmlUtils.htmlEscape(link)).append("\" style=\"display:inline-block;background:#0f7b3f;color:#fff;")
+                    .append("padding:8px 14px;border-radius:6px;text-decoration:none\">Confirmar presença e informar placa</a></p>");
+        }
+        sb.append("<p style=\"color:#64748b;font-size:12px\">Apresente o ID do pedido na portaria.</p></div>");
         return sb.toString();
     }
 

@@ -33,6 +33,15 @@ spring:
 
 app:
   timezone: America/Sao_Paulo
+  url-publica: ${APP_URL_PUBLICA:http://localhost:8081}
+  erp:
+    provedor: ${ERP_PROVEDOR:local}
+    bluesoft:
+      base-url: ${BLUESOFT_BASE_URL:https://erp.bluesoft.com.br}
+      tenant: ${BLUESOFT_TENANT:}
+      client-id: ${BLUESOFT_CLIENT_ID:}
+      client-secret: ${BLUESOFT_CLIENT_SECRET:}
+      timeout-segundos: ${BLUESOFT_TIMEOUT:10}
   cors-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:8081}
   jwt:
     secret: ${JWT_SECRET:desenvolvimento-local-troque-este-segredo-32bytes!}

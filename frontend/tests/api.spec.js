@@ -13,7 +13,7 @@ describe('api', () => {
     const f = vi.fn().mockResolvedValue(resposta(200, [1]))
     vi.stubGlobal('fetch', f)
     expect(await api('/agendamentos', { params: { inicio: '2026-11-01', status: null, fornecedor: '' } })).toEqual([1])
-    expect(f.mock.calls[0][0]).toBe('/api/agendamentos?inicio=2026-11-01')
+    expect(f.mock.calls[0][0]).toBe('/api/v1/agendamentos?inicio=2026-11-01')
     expect(f.mock.calls[0][1].headers.Authorization).toBe('Bearer t1')
   })
 
