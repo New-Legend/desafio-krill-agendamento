@@ -7,19 +7,52 @@ import { deIso, fmtData, fmtDataHora, hoje, isoData, somarDias } from '../utils'
 import { useEnvio } from '../composables/useEnvio'
 import { useNotificar } from '../composables/useNotificar'
 import StatusAgendamento from '../components/StatusAgendamento.vue'
+import EscolhaHorario from '../components/EscolhaHorario.vue'
+import NotasFiscais from '../components/NotasFiscais.vue'
+import SeletorCd from '../components/SeletorCd.vue'
 
 const route = useRoute()
 const router = useRouter()
 const notificar = useNotificar()
 const { enviando, enviar } = useEnvio()
 
-const filtro = reactive({ inicio: deIso(hoje()), fim: deIso(somarDias(hoje(), 30)), status: route.query.status || null, fornecedor: '', idPedido: null })
+const filtro = reactive({ inicio: deIso(hoje()), fim: deIso(somarDias(hoje(), 30)), status: route.query.status || null, fornecedor: '', idPedido: null, cdId: null })
 const status = [
   { label: 'Todos', value: null }, { label: 'Agendado', value: 'AGENDADO' }, { label: 'Confirmado', value: 'CONFIRMADO' },
   { label: 'Chegou', value: 'CHEGOU' }, { label: 'Em recebimento', value: 'EM_RECEBIMENTO' }, { label: 'Recebido', value: 'RECEBIDO' },
   { label: 'Cancelado', value: 'CANCELADO' }, { label: 'Não compareceu', value: 'NAO_COMPARECEU' }
 ]
 const acao = ref(null)
+const remarcando = ref(false)
+const diasRemarcar = ref([])
+const novoHorario = ref(null)
+const podeRemarcar = computed(() => ['AGENDADO', 'CONFIRMADO'].includes(detalhe.value?.status))
+
+async function abrirRemarcar() {
+  novoHorario.value = null
+  try {
+    diasRemarcar.value = await api('/ocupacao/periodo', { params: { inicio: hoje(), fim: somarDias(hoje(), 13), cdId: detalhe.value.cdId } })
+    remarcando.value = true
+  } catch (e) {
+    notificar.erro(e)
+  }
+}
+
+function confirmarRemarcacao() {
+  if (!novoHorario.value) return notificar.aviso('Escolha a nova data e faixa')
+  enviar(async () => {
+    try {
+      const r = await api(`/agendamentos/${detalhe.value.id}/data`, { method: 'PATCH', body: { data: novoHorario.value.data, faixaHorariaId: novoHorario.value.faixaHorariaId } })
+      detalhe.value = r.agendamento
+      ;(r.alertas || []).forEach((a) => notificar.aviso(a.mensagem))
+      notificar.sucesso('Agendamento remarcado e fornecedor avisado')
+      remarcando.value = false
+      buscar()
+    } catch (e) {
+      notificar.erro(e)
+    }
+  })
+}
 const op = reactive({ placa: '', motorista: '', conferente: '', paletesRecebidos: null, divergencia: '' })
 const link = ref('')
 const podeCancelar = computed(() => ['AGENDADO', 'CONFIRMADO'].includes(detalhe.value?.status))
@@ -93,7 +126,7 @@ async function buscar() {
   carregando.value = true
   try {
     lista.value = await api('/agendamentos', {
-      params: { inicio: isoData(filtro.inicio), fim: isoData(filtro.fim), status: filtro.status, fornecedor: filtro.fornecedor.trim(), idPedido: filtro.idPedido }
+      params: { inicio: isoData(filtro.inicio), fim: isoData(filtro.fim), status: filtro.status, fornecedor: filtro.fornecedor.trim(), idPedido: filtro.idPedido, cdId: filtro.cdId }
     })
   } catch (e) {
     notificar.erro(e)
@@ -114,6 +147,7 @@ async function abrir(id) {
 function fechar() {
   detalhe.value = null
   cancelando.value = false
+  remarcando.value = false
   acao.value = null
   link.value = ''
   motivo.value = ''
@@ -158,6 +192,7 @@ onMounted(() => {
     <div class="campo"><label for="ff">Até</label><DatePicker v-model="filtro.fim" input-id="ff" date-format="dd/mm/yy" show-icon icon-display="input" /></div>
     <div class="campo"><label for="fs">Status</label><Select v-model="filtro.status" input-id="fs" :options="status" option-label="label" option-value="value" /></div>
     <div class="campo"><label for="ffor">Fornecedor</label><InputText id="ffor" v-model="filtro.fornecedor" /></div>
+    <SeletorCd v-model="filtro.cdId" input-id="fcd" />
     <div class="campo"><label for="fp">ID do pedido</label><InputNumber v-model="filtro.idPedido" input-id="fp" :use-grouping="false" /></div>
     <Button type="submit" label="Buscar" icon="pi pi-search" class="btn-confirmar" :loading="carregando" />
   </form>
@@ -205,6 +240,16 @@ onMounted(() => {
           <dt>Motivo</dt><dd>{{ detalhe.motivoCancelamento }}</dd>
         </template>
       </dl>
+      <div v-if="remarcando" class="painel acao-op">
+        <h2>Remarcar entrega</h2>
+        <p class="texto-suave">Escolha o novo dia e faixa. Faixas sem vaga podem ser usadas pelo CD (apenas alerta), o fornecedor só vê as que têm vaga.</p>
+        <EscolhaHorario v-model="novoHorario" :dias="diasRemarcar" :paletes="detalhe.paletesEquivalentes" :atual="{ data: detalhe.data, faixaHorariaId: detalhe.faixaHorariaId }" />
+        <div class="acoes">
+          <Button label="Voltar" class="btn-secundario" :disabled="enviando" @click="remarcando = false" />
+          <Button label="Remarcar" icon="pi pi-calendar" class="btn-confirmar" :loading="enviando" :disabled="enviando || !novoHorario" @click="confirmarRemarcacao" />
+        </div>
+      </div>
+      <NotasFiscais v-if="['CHEGOU', 'EM_RECEBIMENTO', 'RECEBIDO'].includes(detalhe.status)" :key="detalhe.id" :agendamento-id="detalhe.id" :admin="isAdmin" :concluido="detalhe.status === 'RECEBIDO'" />
       <div v-if="link" class="link-fornecedor">
         <label for="lk">Link do fornecedor</label>
         <InputText id="lk" :model-value="link" readonly @focus="$event.target.select()" />
@@ -235,19 +280,20 @@ onMounted(() => {
       </div>
     </template>
     <template #footer>
-      <template v-if="detalhe && isAdmin && !acao && !cancelando">
+      <template v-if="detalhe && isAdmin && !acao && !cancelando && !remarcando">
         <Button v-for="a in acoes" :key="a.k" :label="a.label" :icon="a.icon" :class="a.excluir ? 'btn-excluir' : 'btn-confirmar'" @click="prepararAcao(a.k)" />
+        <Button v-if="podeRemarcar" label="Remarcar" icon="pi pi-calendar" class="btn-secundario" @click="abrirRemarcar" />
         <Button v-if="['AGENDADO', 'CONFIRMADO'].includes(detalhe.status)" label="Link do fornecedor" icon="pi pi-link" class="btn-secundario" :disabled="enviando" @click="gerarLink" />
         <Button v-if="['CHEGOU', 'EM_RECEBIMENTO', 'RECEBIDO'].includes(detalhe.status)" label="Emitir vale-palete" icon="pi pi-ticket" class="btn-secundario" @click="router.push({ path: '/vales-palete/novo', query: { agendamento: detalhe.id } })" />
       </template>
-      <template v-if="detalhe && isAdmin && podeCancelar && !acao">
+      <template v-if="detalhe && isAdmin && podeCancelar && !acao && !remarcando">
         <template v-if="cancelando">
           <Button label="Voltar" class="btn-secundario" :disabled="enviando" @click="cancelando = false" />
           <Button label="Confirmar cancelamento" icon="pi pi-times" class="btn-excluir" :loading="enviando" :disabled="enviando" @click="confirmarCancelamento" />
         </template>
         <Button v-else label="Cancelar agendamento" icon="pi pi-times" class="btn-excluir" @click="cancelando = true" />
       </template>
-      <Button v-if="!cancelando && !acao" label="Fechar" class="btn-secundario" @click="fechar" />
+      <Button v-if="!cancelando && !acao && !remarcando" label="Fechar" class="btn-secundario" @click="fechar" />
     </template>
   </Dialog>
 </template>

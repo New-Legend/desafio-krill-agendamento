@@ -6,6 +6,8 @@ import { deIso, fmtData, fmtPct, hoje, isoData, nivelOcupacao, validarAgendament
 import { useEnvio } from '../composables/useEnvio'
 import { useNotificar } from '../composables/useNotificar'
 import BarraOcupacao from '../components/BarraOcupacao.vue'
+import SeletorCd from '../components/SeletorCd.vue'
+import { fmtCnpj } from '../utils'
 
 const route = useRoute()
 const router = useRouter()
@@ -15,7 +17,7 @@ const { enviando, enviar } = useEnvio()
 const vazio = () => ({
   data: deIso(route.query.data && route.query.data >= hoje() ? route.query.data : hoje()),
   faixaHorariaId: null, idPedido: null, fornecedor: '', emailFornecedor: '',
-  tipoCaminhaoId: null, tipoPaletizacaoId: null, quantidadePaletes: null, observacao: ''
+  tipoCaminhaoId: null, tipoPaletizacaoId: null, quantidadePaletes: null, observacao: '', cdId: null, fornecedorId: null
 })
 const form = reactive(vazio())
 const erros = ref({})
@@ -23,6 +25,14 @@ const tentouEnviar = ref(false)
 const caminhoes = ref([])
 const paletizacoes = ref([])
 const simulacao = ref(null)
+const fornecedores = ref([])
+function escolherFornecedor(id) {
+  const f = fornecedores.value.find((x) => x.id === id)
+  if (f) {
+    form.fornecedor = (f.nomeFantasia || f.razaoSocial).slice(0, 80)
+    form.emailFornecedor = f.email.slice(0, 80)
+  }
+}
 const minData = deIso(hoje())
 
 const ocupacao = computed(() => simulacao.value?.ocupacaoAtual)
@@ -52,7 +62,7 @@ async function simular() {
       method: 'POST',
       body: {
         data: isoData(form.data), faixaHorariaId: form.faixaHorariaId,
-        tipoPaletizacaoId: form.tipoPaletizacaoId, quantidadePaletes: form.quantidadePaletes || 0
+        tipoPaletizacaoId: form.tipoPaletizacaoId, quantidadePaletes: form.quantidadePaletes || 0, cdId: form.cdId
       }
     })
     if (atual === seq) simulacao.value = r
@@ -61,7 +71,7 @@ async function simular() {
   }
 }
 
-watch(() => [form.data, form.faixaHorariaId, form.tipoPaletizacaoId, form.quantidadePaletes], simular)
+watch(() => [form.cdId, form.data, form.faixaHorariaId, form.tipoPaletizacaoId, form.quantidadePaletes], simular)
 watch(form, () => { if (tentouEnviar.value) erros.value = validarAgendamento(payload()) })
 
 onMounted(async () => {
@@ -69,6 +79,7 @@ onMounted(async () => {
     const [c, p] = await Promise.all([api('/tipos-caminhao'), api('/tipos-paletizacao')])
     caminhoes.value = c.filter((x) => x.ativo)
     paletizacoes.value = p.filter((x) => x.ativo)
+    api('/fornecedores', { params: { ativo: true } }).then((f) => (fornecedores.value = f)).catch(() => {})
     await simular()
   } catch (e) {
     notificar.erro(e)
@@ -142,6 +153,7 @@ function limpar() {
 
   <form class="painel" novalidate @submit.prevent="salvar">
     <div class="grade">
+      <SeletorCd v-model="form.cdId" input-id="cd" :todos="false" />
       <div class="campo">
         <label for="data">Data <span class="obrig">*</span></label>
         <DatePicker v-model="form.data" input-id="data" date-format="dd/mm/yy" :min-date="minData" show-icon icon-display="input" :invalid="!!erros.data" />
@@ -175,6 +187,11 @@ function limpar() {
           {{ paletizacaoSel.nome }}: conta como {{ equivalentes }} paletes (×{{ paletizacaoSel.fatorMultiplicador }})
         </span>
         <span v-if="erros.quantidadePaletes" class="erro">{{ erros.quantidadePaletes }}</span>
+      </div>
+      <div v-if="fornecedores.length" class="campo c12">
+        <label for="fcad">Fornecedor cadastrado</label>
+        <Select v-model="form.fornecedorId" input-id="fcad" :options="fornecedores" :option-label="(f) => `${f.nomeFantasia || f.razaoSocial} · ${fmtCnpj(f.cnpj)}`" option-value="id"
+                filter show-clear placeholder="Opcional: preenche nome e e-mail" @update:model-value="escolherFornecedor" />
       </div>
       <div class="campo c6">
         <label for="fornecedor">Fornecedor <span class="obrig">*</span></label>

@@ -16,7 +16,8 @@ const props = defineProps({
   rotuloNovo: { type: String, default: 'Incluir' },
   paraForm: { type: Function, default: (r) => ({ ...r }) },
   paraBody: { type: Function, default: (f) => ({ ...f }) },
-  validarExtra: { type: Function, default: () => null }
+  validarExtra: { type: Function, default: () => null },
+  params: { type: Object, default: null }
 })
 
 const notificar = useNotificar()
@@ -30,7 +31,7 @@ const erros = ref({})
 async function carregar() {
   carregando.value = true
   try {
-    lista.value = await api(props.recurso)
+    lista.value = await api(props.recurso, { params: props.params })
   } catch (e) {
     notificar.erro(e)
   } finally {
@@ -90,6 +91,7 @@ defineExpose({ carregar })
       <Column v-for="c in campos.filter((x) => x.coluna !== false)" :key="c.campo" :header="c.rotulo" :class="c.tipo === 'numero' ? 'num' : ''">
         <template #body="{ data }">
           <Tag v-if="c.tipo === 'ativo'" :value="data[c.campo] ? 'Ativo' : 'Inativo'" :severity="data[c.campo] ? 'success' : 'secondary'" />
+          <template v-else-if="c.formatar">{{ c.formatar(data) }}</template>
           <template v-else-if="c.tipo === 'hora'">{{ (data[c.campo] || '').slice(0, 5) }}</template>
           <template v-else>{{ data[c.campo] ?? '—' }}{{ c.sufixo && data[c.campo] != null ? c.sufixo : '' }}</template>
         </template>
@@ -106,6 +108,7 @@ defineExpose({ carregar })
         <InputText v-if="c.tipo === 'texto'" :id="c.campo" v-model="form[c.campo]" :maxlength="c.max" :invalid="!!erros[c.campo]" />
         <InputNumber v-else-if="c.tipo === 'numero'" v-model="form[c.campo]" :input-id="c.campo" :min="c.min ?? 0" :max="c.maxNum" :invalid="!!erros[c.campo]" />
         <InputText v-else-if="c.tipo === 'hora'" :id="c.campo" v-model="form[c.campo]" type="time" step="900" :invalid="!!erros[c.campo]" />
+        <Select v-else-if="c.tipo === 'select'" v-model="form[c.campo]" :input-id="c.campo" :options="c.opcoes" option-label="label" option-value="value" :invalid="!!erros[c.campo]" show-clear />
         <ToggleSwitch v-else-if="c.tipo === 'ativo'" v-model="form[c.campo]" :input-id="c.campo" />
         <span v-if="c.dica" class="dica">{{ c.dica }}</span>
         <span v-if="erros[c.campo]" class="erro">{{ erros[c.campo] }}</span>

@@ -85,3 +85,39 @@ export function baixarArquivo(blob, nome) {
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+
+export function soDigitos(s) {
+  return String(s ?? '').replace(/\D/g, '')
+}
+
+export function cnpjValido(v) {
+  const c = soDigitos(v)
+  if (c.length !== 14 || /^(\d)\1+$/.test(c)) return false
+  const dv = (base) => {
+    let soma = 0
+    let peso = base.length - 7
+    for (const d of base) {
+      soma += Number(d) * peso--
+      if (peso < 2) peso = 9
+    }
+    const r = soma % 11
+    return r < 2 ? 0 : 11 - r
+  }
+  const d1 = dv(c.slice(0, 12))
+  return d1 === Number(c[12]) && dv(c.slice(0, 13)) === Number(c[13])
+}
+
+export function fmtCnpj(v) {
+  const c = soDigitos(v)
+  return c.length === 14 ? c.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5') : v || ''
+}
+
+export function fmtMoeda(v) {
+  return v == null ? '—' : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+export function fmtMin(m) {
+  if (m == null) return '—'
+  const h = Math.floor(m / 60)
+  return h ? `${h}h${String(m % 60).padStart(2, '0')}` : `${m} min`
+}

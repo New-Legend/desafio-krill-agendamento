@@ -61,7 +61,7 @@ a { color: var(--cor-topo-2); }
 }
 .btn-topo:hover { background: rgba(255, 255, 255, .08); }
 .btn-topo.ativo { color: var(--cor-destaque); border-color: var(--cor-destaque); }
-.btn-hamburguer { display: none; }
+.btn-hamburguer { display: inline-flex; }
 
 .conteudo { max-width: 1440px; margin: 0 auto; padding: 16px; }
 .cabecalho { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }

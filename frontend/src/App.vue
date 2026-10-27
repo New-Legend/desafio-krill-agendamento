@@ -21,15 +21,38 @@ const itens = computed(() => {
     { to: '/vales-palete', label: 'Vale-palete', icon: 'pi pi-ticket' },
     { to: '/relatorio', label: 'Relatório', icon: 'pi pi-file' }
   ]
-  if (!isAdmin.value) return [{ grupo: 'Operação', itens: base }]
+  const recebimento = {
+    grupo: 'Recebimento',
+    itens: [
+      { to: '/rotina', label: 'Rotina do dia', icon: 'pi pi-list-check' },
+      { to: '/divergencias', label: 'Divergências', icon: 'pi pi-exclamation-triangle' },
+      { to: '/relatorios/descarga', label: 'Tempos de descarga', icon: 'pi pi-stopwatch' }
+    ]
+  }
+  const paletes = {
+    grupo: 'Paletes',
+    itens: [
+      base[3],
+      { to: '/paletes/saldos', label: 'Conta-corrente', icon: 'pi pi-wallet' },
+      { to: '/paletes/cobrancas', label: 'Cobranças e recibos', icon: 'pi pi-receipt' },
+      { to: '/paletes/lojas', label: 'Paletes nas lojas', icon: 'pi pi-shop' }
+    ]
+  }
+  if (!isAdmin.value) return [{ grupo: 'Operação', itens: base }, recebimento, paletes]
   return [
     { grupo: 'Operação', itens: [base[0], base[1], { to: '/agendamentos/novo', label: 'Novo agendamento', icon: 'pi pi-plus' }, base[2], base[3], base[4]] },
+    recebimento,
+    paletes,
     {
       grupo: 'Cadastros',
       itens: [
+        { to: '/cadastros/cds', label: 'Centros de distribuição', icon: 'pi pi-building' },
+        { to: '/cadastros/fornecedores', label: 'Fornecedores', icon: 'pi pi-users' },
+        { to: '/cadastros/produtos', label: 'Produtos e pesos', icon: 'pi pi-barcode' },
         { to: '/cadastros/capacidade', label: 'Capacidade', icon: 'pi pi-sliders-h' },
         { to: '/cadastros/faixas', label: 'Faixas horárias', icon: 'pi pi-clock' },
         { to: '/cadastros/caminhoes', label: 'Caminhões', icon: 'pi pi-truck' },
+        { to: '/cadastros/descarga', label: 'Tempos de descarga', icon: 'pi pi-stopwatch' },
         { to: '/cadastros/paletizacao', label: 'Paletização', icon: 'pi pi-box' }
       ]
     },
@@ -82,6 +105,7 @@ function sair() {
       </RouterLink>
       <nav class="menu">
         <RouterLink v-for="i in itens[0].itens" :key="i.to" :to="i.to">{{ i.label }}</RouterLink>
+        <RouterLink to="/rotina">Rotina</RouterLink>
       </nav>
       <div class="espaco" />
       <div class="usuario">

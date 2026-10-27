@@ -23,7 +23,7 @@ function query(params) {
   return s ? `?${s}` : ''
 }
 
-export async function api(caminho, { method = 'GET', body, params, blob = false } = {}) {
+export async function api(caminho, { method = 'GET', body, params, blob = false, form } = {}) {
   const headers = { Accept: blob ? '*/*' : 'application/json' }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (sessao.atual?.token) headers.Authorization = `Bearer ${sessao.atual.token}`
@@ -32,7 +32,7 @@ export async function api(caminho, { method = 'GET', body, params, blob = false 
     resp = await fetch(`/api/v1${caminho}${query(params)}`, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body)
+      body: form || (body === undefined ? undefined : JSON.stringify(body))
     })
   } catch {
     throw new ApiError(0, 'Sem conexão com o servidor')

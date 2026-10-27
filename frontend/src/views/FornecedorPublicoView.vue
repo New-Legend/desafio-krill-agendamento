@@ -6,6 +6,7 @@ import { diaSemana, fmtData } from '../utils'
 import { useEnvio } from '../composables/useEnvio'
 import { useNotificar } from '../composables/useNotificar'
 import StatusAgendamento from '../components/StatusAgendamento.vue'
+import EscolhaHorario from '../components/EscolhaHorario.vue'
 
 const route = useRoute()
 const notificar = useNotificar()
@@ -48,7 +49,36 @@ function salvarVeiculo() {
   })
 }
 
+const remarcando = ref(false)
+const dias = ref([])
+const escolha = ref(null)
+
+async function abrirRemarcar() {
+  escolha.value = null
+  try {
+    dias.value = await api(`${base}/disponibilidade`)
+    remarcando.value = true
+  } catch (e) {
+    notificar.erro(e)
+  }
+}
+
+function remarcar() {
+  if (!escolha.value) return notificar.aviso('Escolha o novo dia e faixa')
+  enviar(async () => {
+    try {
+      ag.value = await api(`${base}/reagendamento`, { method: 'PUT', body: { data: escolha.value.data, faixaHorariaId: escolha.value.faixaHorariaId } })
+      remarcando.value = false
+      notificar.sucesso('Entrega remarcada. O recebimento foi avisado.')
+    } catch (e) {
+      notificar.erro(e)
+      if (e.status === 422) abrirRemarcar()
+    }
+  })
+}
+
 onMounted(carregar)
+defineExpose({ abrirRemarcar, remarcar, escolha })
 </script>
 
 <template>
@@ -74,6 +104,20 @@ onMounted(carregar)
         <Button v-if="ag.status === 'AGENDADO'" label="Confirmar presença" icon="pi pi-check" class="btn-confirmar largo" :loading="enviando" :disabled="enviando" @click="confirmar" />
       </section>
 
+      <section v-if="ag.editavel" class="painel">
+        <div class="painel-titulo"><h2>Remarcar entrega</h2><Button v-if="!remarcando" label="Escolher outra data" icon="pi pi-calendar" class="btn-secundario" size="small" @click="abrirRemarcar" /></div>
+        <template v-if="remarcando">
+          <p class="texto-suave">Somente faixas com vaga para {{ ag.paletesEquivalentes }} palete(s) podem ser escolhidas.</p>
+          <EscolhaHorario v-model="escolha" :dias="dias" :paletes="ag.paletesEquivalentes" :atual="{ data: ag.data, faixaHorariaId: ag.faixaHorariaId }" somente-com-vaga />
+          <p v-if="escolha" class="destaque-escolha">Nova entrega: <strong>{{ diaSemana(escolha.data) }}, {{ fmtData(escolha.data) }} · {{ escolha.descricao }}</strong></p>
+          <div class="linha-botoes">
+            <Button label="Voltar" class="btn-secundario" :disabled="enviando" @click="remarcando = false" />
+            <Button label="Confirmar nova data" icon="pi pi-check" class="btn-confirmar" :loading="enviando" :disabled="enviando || !escolha" @click="remarcar" />
+          </div>
+        </template>
+        <p v-else class="texto-suave">Não vai conseguir vir em {{ fmtData(ag.data) }}? Escolha outro dia e faixa com vaga.</p>
+      </section>
+
       <form v-if="ag.editavel" class="painel" @submit.prevent="salvarVeiculo">
         <h2>Veículo</h2>
         <div class="form-grade">
@@ -82,7 +126,7 @@ onMounted(carregar)
         </div>
         <Button type="submit" label="Enviar dados do veículo" icon="pi pi-send" class="btn-confirmar largo" :loading="enviando" :disabled="enviando" />
       </form>
-      <p class="texto-suave rodape">Chegue no início da faixa com a nota fiscal. Para cancelar ou remarcar, fale com o recebimento.</p>
+      <p class="texto-suave rodape">Chegue no início da faixa com a nota fiscal. Para cancelar, fale com o recebimento.</p>
     </template>
   </div>
 </template>
@@ -96,5 +140,7 @@ onMounted(carregar)
 .destaque { display: flex; flex-direction: column; padding: 10px 12px; background: var(--cor-fundo); border-radius: var(--raio); margin-bottom: 10px; }
 .destaque strong { font-size: 20px; }
 .largo { width: 100%; margin-top: 12px; }
+.linha-botoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.destaque-escolha { margin: 10px 0 0; }
 .rodape { font-size: 12px; text-align: center; }
 </style>
