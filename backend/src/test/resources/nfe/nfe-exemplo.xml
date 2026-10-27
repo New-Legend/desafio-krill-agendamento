@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe35261011222333000181550010000123451000123458" versao="4.00">
+      <ide><serie>1</serie><nNF>12345</nNF><dhEmi>2026-10-26T09:15:00-03:00</dhEmi></ide>
+      <emit><CNPJ>11222333000181</CNPJ><xNome>Distribuidora Litoral Alimentos Ltda</xNome></emit>
+      <det nItem="1">
+        <prod><cProd>ARZ5</cProd><cEAN>7891000100103</cEAN><xProd>ARROZ TIPO 1 5KG</xProd><NCM>10063021</NCM>
+          <uCom>FD</uCom><qCom>100.0000</qCom><vUnCom>120.0000</vUnCom><vProd>12000.00</vProd></prod>
+      </det>
+      <det nItem="2">
+        <prod><cProd>FEJ1</cProd><cEAN>SEM GTIN</cEAN><xProd>FEIJAO CARIOCA 1KG</xProd><NCM>07133319</NCM>
+          <uCom>FD</uCom><qCom>50.0000</qCom><vUnCom>80.0000</vUnCom><vProd>4000.00</vProd></prod>
+      </det>
+      <total><ICMSTot><vNF>16000.00</vNF></ICMSTot></total>
+      <transp><vol><qVol>150</qVol><pesoB>3600.000</pesoB></vol></transp>
+    </infNFe>
+  </NFe>
+</nfeProc>
