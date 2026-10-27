@@ -81,7 +81,7 @@ function sair() {
         <span>Rede Krill <small>· Recebimento</small></span>
       </RouterLink>
       <nav class="menu">
-        <RouterLink v-for="i in itensPlanos" :key="i.to" :to="i.to">{{ i.label }}</RouterLink>
+        <RouterLink v-for="i in itens[0].itens" :key="i.to" :to="i.to">{{ i.label }}</RouterLink>
       </nav>
       <div class="espaco" />
       <div class="usuario">

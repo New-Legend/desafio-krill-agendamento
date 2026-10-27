@@ -1,0 +1,58 @@
+name: krill-agendamento
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: agendamento
+      POSTGRES_USER: agendamento
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-agendamento}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agendamento -d agendamento"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/agendamento
+      DB_USER: agendamento
+      DB_PASSWORD: ${DB_PASSWORD:-agendamento}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      MAIL_FROM: ${MAIL_FROM:-recebimento@redekrill.com.br}
+      JWT_SECRET: ${JWT_SECRET:-troque-este-segredo-em-producao-com-32-bytes-ou-mais}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:recebimento@redekrill.com.br}
+      APP_URL_PUBLICA: ${APP_URL_PUBLICA:-http://localhost:8081}
+      CORS_ORIGINS: ${APP_URL_PUBLICA:-http://localhost:8081}
+      ERP_PROVEDOR: ${ERP_PROVEDOR:-local}
+      BLUESOFT_TENANT: ${BLUESOFT_TENANT:-}
+      BLUESOFT_CLIENT_ID: ${BLUESOFT_CLIENT_ID:-}
+      BLUESOFT_CLIENT_SECRET: ${BLUESOFT_CLIENT_SECRET:-}
+    ports:
+      - "8080:8080"
+
+  web:
+    build: ./frontend
+    depends_on:
+      - api
+    ports:
+      - "8081:8080"
+
+volumes:
+  dbdata:

@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.m2 mvn -B -q package -DskipTests -Djacoco.s
 
 # ---- runtime: apenas JRE, usuário sem privilégios, camadas do Spring Boot
 FROM eclipse-temurin:21-jre-alpine
-RUN addgroup -S app && adduser -S app -G app
+RUN apk upgrade --no-cache && addgroup -S app && adduser -S app -G app
 WORKDIR /app
 COPY --from=build /app/target/extracted/dependencies/ ./
 COPY --from=build /app/target/extracted/spring-boot-loader/ ./
