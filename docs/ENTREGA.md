@@ -28,7 +28,7 @@ docker compose up --build
 | Java 17+ / Spring Boot 3 / JPA / Security JWT / Flyway / PostgreSQL / Swagger | ✅ |
 | Vue 3 + Vite + PrimeVue | ✅ |
 | Dockerfiles multi-stage, não-root, nginx + compose (db, api, web, mail) | ✅ |
-| JUnit 5, Mockito, Testcontainers, JaCoCo ≥ 80% em domain/application, Vitest | ✅ backend: 69 testes, domain+application 99,6% de linhas e 91,4% de ramos. Frontend: 53 testes (Vitest + Vue Test Utils), 95,8% de linhas e 83,7% de ramos nas telas críticas (formulário, lista/detalhe, cadastros, guarda de rota, login e telas do porte) |
+| JUnit 5, Mockito, Testcontainers, JaCoCo ≥ 80% em domain/application, Vitest | ✅ backend: 80 testes, domain+application 99,7% de linhas e 88,2% de ramos. Frontend: 57 testes (Vitest + Vue Test Utils), 95,5% de linhas e 82,1% de ramos nas telas críticas (formulário, lista/detalhe, cadastros, guarda de rota, login e telas do porte) |
 | Clean Architecture, README em pt-BR | ✅ |
 | Relatório de segurança (OWASP Dependency-Check) | ✅ configurado, veja [SEGURANCA.md](SEGURANCA.md) |
 | **Extra:** PWA instalável + Web Push (novo, cancelado, capacidade excedida, chegada, divergência) | ✅ |
@@ -36,7 +36,10 @@ docker compose up --build
 | **Extra:** Preenchimento pelo ID do pedido via ERP (Bluesoft pronto, desligado) | ✅ [INTEGRACAO-BLUESOFT.md](INTEGRACAO-BLUESOFT.md) |
 | **Extra:** Remarcação pelo fornecedor (só com vaga) e pelo CD, multi-CD, fornecedores, produtos/pesos, XML da NF-e, divergências com CSV, tempos de descarga, rotina do dia | ✅ |
 | **Extra:** Conta-corrente de paletes, cobrança com recibo, romaneios e saldo por loja | ✅ |
-| WhatsApp | 🔮 futuro (e-mail + push nesta entrega) |
+| **Extra:** Tipos de palete configuráveis (CRUD ADMIN, semente PBR/CHEP/Chapatex/Descartável) | ✅ |
+| **Extra:** E-mail da cobrança/recibo de paletes (Mailpit), com histórico de envios | ✅ |
+| **Extra:** WhatsApp como canal plugável: link `wa.me` com mensagem pronta; adaptador da API do WhatsApp Business pronto e desligado | ✅ |
+| **Extra:** Conferentes por CD | ✅ |
 
 ## Por que PostgreSQL
 

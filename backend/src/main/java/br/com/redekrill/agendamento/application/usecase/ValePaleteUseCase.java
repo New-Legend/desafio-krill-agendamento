@@ -27,9 +27,16 @@ public class ValePaleteUseCase {
     private final AuditoriaUseCase auditoria;
     private final Transacao transacao;
     private final Clock clock;
+    private final TipoPaleteUseCase tipos;
 
     public ValePaleteUseCase(ValePaleteRepositorio vales, AgendamentoRepositorio agendamentos, AuditoriaUseCase auditoria,
                              Transacao transacao, Clock clock) {
+        this(vales, agendamentos, auditoria, transacao, clock, null);
+    }
+
+    public ValePaleteUseCase(ValePaleteRepositorio vales, AgendamentoRepositorio agendamentos, AuditoriaUseCase auditoria,
+                             Transacao transacao, Clock clock, TipoPaleteUseCase tipos) {
+        this.tipos = tipos;
         this.vales = vales;
         this.agendamentos = agendamentos;
         this.auditoria = auditoria;
@@ -39,6 +46,7 @@ public class ValePaleteUseCase {
 
     public ValePalete emitir(NovoVale cmd, Solicitante solicitante) {
         return transacao.executar(() -> {
+            if (tipos != null && cmd.quantidades() != null) tipos.validarNovo(cmd.quantidades());
             OffsetDateTime agora = OffsetDateTime.now(clock);
             LocalDate data = cmd.data() == null ? agora.toLocalDate() : cmd.data();
             String fornecedor = cmd.fornecedor();

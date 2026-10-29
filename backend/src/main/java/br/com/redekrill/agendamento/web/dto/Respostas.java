@@ -84,15 +84,16 @@ public final class Respostas {
     }
 
     public record ValePaleteResp(Long id, String codigo, Long agendamentoId, LocalDate data, String fornecedor, String placa,
-                                 String motorista, br.com.redekrill.agendamento.domain.model.ValePalete.Quantidades entregues,
-                                 br.com.redekrill.agendamento.domain.model.ValePalete.Quantidades devolvidos,
-                                 br.com.redekrill.agendamento.domain.model.ValePalete.Quantidades saldo, String status,
+                                 String motorista, java.util.Map<String, Integer> entregues,
+                                 java.util.Map<String, Integer> devolvidos, java.util.Map<String, Integer> saldo,
+                                 int totalEntregues, int totalDevolvidos, int totalSaldo, String status,
                                  String observacao, br.com.redekrill.agendamento.domain.model.ValePalete.Assinatura assinaturaMotorista,
                                  br.com.redekrill.agendamento.domain.model.ValePalete.Assinatura assinaturaConferente,
                                  String criadoPor, OffsetDateTime criadoEm) {
         public static ValePaleteResp de(br.com.redekrill.agendamento.domain.model.ValePalete v) {
             return new ValePaleteResp(v.getId(), v.getCodigo(), v.getAgendamentoId(), v.getData(), v.getFornecedor(), v.getPlaca(),
-                    v.getMotorista(), v.getEntregues(), v.getDevolvidos(), v.saldo(), v.getStatus().name(), v.getObservacao(),
+                    v.getMotorista(), v.getEntregues().itens(), v.getDevolvidos().itens(), v.saldo().itens(),
+                    v.getEntregues().total(), v.getDevolvidos().total(), v.saldo().total(), v.getStatus().name(), v.getObservacao(),
                     v.getAssinaturaMotorista(), v.getAssinaturaConferente(), v.getCriadoPor(), v.getCriadoEm());
         }
     }

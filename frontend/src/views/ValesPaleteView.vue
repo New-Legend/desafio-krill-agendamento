@@ -17,7 +17,6 @@ const STATUS = [
   { label: 'Quitado', value: 'QUITADO' }, { label: 'Cancelado', value: 'CANCELADO' }
 ]
 const SEV = { PENDENTE: 'warn', ASSINADO: 'info', QUITADO: 'success', CANCELADO: 'danger' }
-const total = (q) => q.pbr + q.chep + q.chapatex + q.descartaveis
 
 async function buscar() {
   carregando.value = true
@@ -65,8 +64,8 @@ onMounted(buscar)
       <Column header="Data"><template #body="{ data }">{{ fmtData(data.data) }}</template></Column>
       <Column field="fornecedor" header="Fornecedor" />
       <Column field="placa" header="Placa" />
-      <Column header="Entregues" class="num"><template #body="{ data }">{{ total(data.entregues) }}</template></Column>
-      <Column header="Saldo" class="num"><template #body="{ data }"><b>{{ total(data.saldo) }}</b></template></Column>
+      <Column header="Entregues" class="num"><template #body="{ data }">{{ data.totalEntregues }}</template></Column>
+      <Column header="Saldo" class="num"><template #body="{ data }"><b>{{ data.totalSaldo }}</b></template></Column>
       <Column header="Status"><template #body="{ data }"><Tag :value="STATUS.find((s) => s.value === data.status)?.label" :severity="SEV[data.status]" /></template></Column>
     </DataTable>
   </section>

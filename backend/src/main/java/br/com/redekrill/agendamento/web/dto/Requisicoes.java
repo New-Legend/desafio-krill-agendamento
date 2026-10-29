@@ -1,6 +1,8 @@
 package br.com.redekrill.agendamento.web.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -9,7 +11,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 import java.time.LocalTime;
 
 /** Corpos de requisição da API (validação de entrada com Bean Validation). */
@@ -84,8 +88,8 @@ public final class Requisicoes {
     public record Movimento(LocalDate data,
                             @NotNull @Schema(example = "ENVIO") br.com.redekrill.agendamento.domain.model.MovimentoPalete.Tipo tipo,
                             Long cdId, @NotBlank @Size(max = 80) @Schema(example = "Loja 12 - Centro") String loja,
-                            @NotNull @Min(0) @Max(10000) Integer pbr, @NotNull @Min(0) @Max(10000) Integer chep,
-                            @NotNull @Min(0) @Max(10000) Integer chapatex, @NotNull @Min(0) @Max(10000) Integer descartaveis,
+                            @NotNull @Size(max = 30) @Schema(example = "{\"PBR\": 30, \"CHEP\": 2}")
+                            Map<@NotBlank @Size(max = 20) String, @NotNull @Min(0) @Max(10000) Integer> quantidades,
                             @Size(max = 255) String observacao) {
     }
 
@@ -137,10 +141,8 @@ public final class Requisicoes {
     public record NovoVale(Long agendamentoId, LocalDate data,
                            @Size(max = 80) @Schema(example = "Distribuidora Litoral Alimentos Ltda") String fornecedor,
                            @Size(max = 8) String placa, @Size(max = 80) String motorista,
-                           @NotNull @Min(0) @Max(1000) @Schema(example = "20") Integer pbr,
-                           @NotNull @Min(0) @Max(1000) Integer chep,
-                           @NotNull @Min(0) @Max(1000) Integer chapatex,
-                           @NotNull @Min(0) @Max(1000) Integer descartaveis,
+                           @NotNull @Size(max = 30) @Schema(description = "Quantidade por código de tipo de palete", example = "{\"PBR\": 20, \"DESCARTAVEL\": 2}")
+                           Map<@NotBlank @Size(max = 20) String, @NotNull @Min(0) @Max(1000) Integer> quantidades,
                            @Size(max = 500) String observacao) {
     }
 
@@ -148,8 +150,23 @@ public final class Requisicoes {
                              @NotBlank @Size(max = 300000) @Schema(description = "PNG em data URL (data:image/png;base64,...)") String imagem) {
     }
 
-    public record Devolucao(@NotNull @Min(0) Integer pbr, @NotNull @Min(0) Integer chep,
-                            @NotNull @Min(0) Integer chapatex, @NotNull @Min(0) Integer descartaveis) {
+    public record Devolucao(@NotNull @Size(max = 30) @Schema(example = "{\"PBR\": 10}")
+                            Map<@NotBlank @Size(max = 20) String, @NotNull @Min(0) @Max(10000) Integer> quantidades) {
+    }
+
+    public record TipoPalete(@Size(max = 20) @Schema(example = "PALLET_PLASTICO") String codigo,
+                             @NotBlank(message = "Nome é obrigatório") @Size(max = 40) String nome,
+                             @DecimalMin("0.00") @DecimalMax("99999.99") BigDecimal valorReposicao,
+                             @Min(0) @Max(999) Integer ordem, Boolean ativo) {
+    }
+
+    public record Conferente(Long cdId, @NotBlank(message = "Nome é obrigatório") @Size(max = 80) String nome, Boolean ativo) {
+    }
+
+    public record EnvioEmail(@NotBlank(message = "Informe o e-mail") @Email @Size(max = 80) String para) {
+    }
+
+    public record EnvioWhatsApp(@Size(max = 20) @Schema(example = "(11) 99999-0000") String telefone) {
     }
 
     public record InscricaoPush(@NotBlank @Size(max = 1000) String endpoint,

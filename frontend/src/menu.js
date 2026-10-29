@@ -47,7 +47,9 @@ export function menuItens(admin) {
         { to: '/cadastros/faixas', label: 'Faixas horárias', icon: 'pi pi-clock' },
         { to: '/cadastros/caminhoes', label: 'Caminhões', icon: 'pi pi-truck' },
         { to: '/cadastros/descarga', label: 'Tempos de descarga', icon: 'pi pi-stopwatch' },
-        { to: '/cadastros/paletizacao', label: 'Paletização', icon: 'pi pi-box' }
+        { to: '/cadastros/paletizacao', label: 'Paletização', icon: 'pi pi-box' },
+        { to: '/cadastros/tipos-palete', label: 'Tipos de palete', icon: 'pi pi-th-large' },
+        { to: '/cadastros/conferentes', label: 'Conferentes', icon: 'pi pi-id-card' }
       ]
     },
     { grupo: 'Administração', itens: [{ to: '/auditoria', label: 'Auditoria', icon: 'pi pi-shield' }] }

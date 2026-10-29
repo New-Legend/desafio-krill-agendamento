@@ -34,14 +34,8 @@ public class ValePaleteRepositorioJpa implements ValePaleteRepositorio {
         e.fornecedor = v.getFornecedor();
         e.placa = v.getPlaca();
         e.motorista = v.getMotorista();
-        e.pbr = v.getEntregues().pbr();
-        e.chep = v.getEntregues().chep();
-        e.chapatex = v.getEntregues().chapatex();
-        e.descartaveis = v.getEntregues().descartaveis();
-        e.devolvidosPbr = v.getDevolvidos().pbr();
-        e.devolvidosChep = v.getDevolvidos().chep();
-        e.devolvidosChapatex = v.getDevolvidos().chapatex();
-        e.devolvidosDescartaveis = v.getDevolvidos().descartaveis();
+        e.entregues = new java.util.TreeMap<>(v.getEntregues().itens());
+        e.devolvidos = new java.util.TreeMap<>(v.getDevolvidos().itens());
         e.status = v.getStatus().name();
         e.observacao = v.getObservacao();
         if (v.getAssinaturaMotorista() != null) {
@@ -91,8 +85,7 @@ public class ValePaleteRepositorioJpa implements ValePaleteRepositorio {
 
     static ValePalete dominio(ValePaleteEntity e) {
         return new ValePalete(e.id, e.codigo, e.agendamentoId, e.data, e.fornecedor, e.placa, e.motorista,
-                new Quantidades(e.pbr, e.chep, e.chapatex, e.descartaveis),
-                new Quantidades(e.devolvidosPbr, e.devolvidosChep, e.devolvidosChapatex, e.devolvidosDescartaveis),
+                new Quantidades(e.entregues), new Quantidades(e.devolvidos),
                 ValePalete.Status.valueOf(e.status), e.observacao,
                 e.assinaturaMotorista == null ? null : new Assinatura(e.assinaturaMotoristaNome, e.assinaturaMotorista, e.assinaturaMotoristaEm),
                 e.assinaturaConferente == null ? null : new Assinatura(e.assinaturaConferenteNome, e.assinaturaConferente, e.assinaturaConferenteEm),

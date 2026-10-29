@@ -22,15 +22,15 @@ class ValePaleteTest {
 
     @Test
     void validacoes() {
-        Quantidades q = new Quantidades(1, 0, 0, 0);
-        assertThatThrownBy(() -> new Quantidades(-1, 0, 0, 0)).isInstanceOf(RegraNegocioException.class);
+        Quantidades q = br.com.redekrill.agendamento.TestePaletes.q(1, 0, 0, 0);
+        assertThatThrownBy(() -> br.com.redekrill.agendamento.TestePaletes.q(-1, 0, 0, 0)).isInstanceOf(RegraNegocioException.class);
         assertThatThrownBy(() -> new ValePalete(1L, " ", null, LocalDate.now(), "F", null, null, q, null, null, null, null, null, "a", AGORA)).hasMessageContaining("Código");
         assertThatThrownBy(() -> new ValePalete(1L, "VP", null, null, "F", null, null, q, null, null, null, null, null, "a", AGORA)).hasMessageContaining("Data");
         assertThatThrownBy(() -> new ValePalete(1L, "VP", null, LocalDate.now(), null, null, null, q, null, null, null, null, null, "a", AGORA)).hasMessageContaining("Fornecedor");
         assertThatThrownBy(() -> new ValePalete(1L, "VP", null, LocalDate.now(), "x".repeat(81), null, null, q, null, null, null, null, null, "a", AGORA)).hasMessageContaining("80");
         assertThatThrownBy(() -> vale(Quantidades.ZERO)).hasMessageContaining("ao menos");
         assertThatThrownBy(() -> vale(null)).hasMessageContaining("ao menos");
-        assertThatThrownBy(() -> new ValePalete(1L, "VP", null, LocalDate.now(), "F", null, null, q, new Quantidades(2, 0, 0, 0), null, null, null, null, "a", AGORA))
+        assertThatThrownBy(() -> new ValePalete(1L, "VP", null, LocalDate.now(), "F", null, null, q, br.com.redekrill.agendamento.TestePaletes.q(2, 0, 0, 0), null, null, null, null, "a", AGORA))
                 .hasMessageContaining("Devolução");
         ValePalete v = vale(q);
         assertThat(v.getFornecedor()).isEqualTo("Forn");
@@ -41,7 +41,7 @@ class ValePaleteTest {
 
     @Test
     void assinaturasEDevolucao() {
-        ValePalete v = vale(new Quantidades(4, 3, 2, 1));
+        ValePalete v = vale(br.com.redekrill.agendamento.TestePaletes.q(4, 3, 2, 1));
         assertThat(v.saldo().total()).isEqualTo(10);
         assertThatThrownBy(() -> v.assinar(Assinante.MOTORISTA, " ", "data:image/png;base64,A", AGORA)).hasMessageContaining("nome");
         assertThatThrownBy(() -> v.assinar(Assinante.MOTORISTA, "J", "http://x", AGORA)).hasMessageContaining("inválida");
@@ -55,14 +55,14 @@ class ValePaleteTest {
         v.removerAssinatura(Assinante.MOTORISTA);
         assertThat(v.getAssinaturaMotorista()).isNull();
         assertThatThrownBy(() -> v.registrarDevolucao(Quantidades.ZERO)).hasMessageContaining("Informe");
-        assertThatThrownBy(() -> v.registrarDevolucao(new Quantidades(5, 0, 0, 0))).hasMessageContaining("saldo");
-        v.registrarDevolucao(new Quantidades(4, 3, 2, 1));
+        assertThatThrownBy(() -> v.registrarDevolucao(br.com.redekrill.agendamento.TestePaletes.q(5, 0, 0, 0))).hasMessageContaining("saldo");
+        v.registrarDevolucao(br.com.redekrill.agendamento.TestePaletes.q(4, 3, 2, 1));
         assertThat(v.getStatus()).isEqualTo(ValePalete.Status.QUITADO);
         assertThatThrownBy(v::cancelar).hasMessageContaining("quitado");
         assertThatThrownBy(() -> v.removerAssinatura(Assinante.CONFERENTE)).hasMessageContaining("quitado");
-        ValePalete c = vale(new Quantidades(1, 0, 0, 0));
+        ValePalete c = vale(br.com.redekrill.agendamento.TestePaletes.q(1, 0, 0, 0));
         c.cancelar();
-        assertThatThrownBy(() -> c.registrarDevolucao(new Quantidades(1, 0, 0, 0))).hasMessageContaining("cancelado");
+        assertThatThrownBy(() -> c.registrarDevolucao(br.com.redekrill.agendamento.TestePaletes.q(1, 0, 0, 0))).hasMessageContaining("cancelado");
         assertThat(c.getCodigo()).isEqualTo("VP-1");
         assertThat(c.getId()).isEqualTo(1L);
         assertThat(c.getAgendamentoId()).isNull();

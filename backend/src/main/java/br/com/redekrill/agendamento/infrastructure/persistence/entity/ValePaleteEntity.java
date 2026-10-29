@@ -7,7 +7,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDate;
+import java.util.Map;
 import java.time.OffsetDateTime;
 
 @Entity
@@ -23,18 +27,10 @@ public class ValePaleteEntity {
     public String fornecedor;
     public String placa;
     public String motorista;
-    public int pbr;
-    public int chep;
-    public int chapatex;
-    public int descartaveis;
-    @Column(name = "devolvidos_pbr")
-    public int devolvidosPbr;
-    @Column(name = "devolvidos_chep")
-    public int devolvidosChep;
-    @Column(name = "devolvidos_chapatex")
-    public int devolvidosChapatex;
-    @Column(name = "devolvidos_descartaveis")
-    public int devolvidosDescartaveis;
+    @JdbcTypeCode(SqlTypes.JSON)
+    public Map<String, Integer> entregues;
+    @JdbcTypeCode(SqlTypes.JSON)
+    public Map<String, Integer> devolvidos;
     public String status;
     public String observacao;
     @Column(name = "assinatura_motorista")

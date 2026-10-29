@@ -7,7 +7,7 @@ import java.time.OffsetDateTime;
 
 /**
  * Vale-palete (porte do Gestão CD): registra paletes trocados com fornecedor/transportadora
- * por tipo (PBR, CHEP, Chapatex, descartável), quanto foi devolvido e o saldo devido.
+ * por tipo configurável (PBR, CHEP, Chapatex, descartável...), quanto foi devolvido e o saldo devido.
  * Fica PENDENTE até ter as duas assinaturas (motorista e conferente).
  */
 public class ValePalete {
@@ -17,26 +17,63 @@ public class ValePalete {
     public enum Assinante { MOTORISTA, CONFERENTE }
 
     /** Quantidades por tipo de palete. */
-    public record Quantidades(int pbr, int chep, int chapatex, int descartaveis) {
-        public static final Quantidades ZERO = new Quantidades(0, 0, 0, 0);
+    /**
+     * Quantidade por tipo de palete ({CODIGO: quantidade}). Os tipos vêm do cadastro configurável
+     * (PBR, CHEP, Chapatex, descartável e outros que o CD criar). Zeros são descartados.
+     */
+    public record Quantidades(java.util.SortedMap<String, Integer> itens) {
+        public static final Quantidades ZERO = new Quantidades(java.util.Map.of());
+
+        public Quantidades(java.util.Map<String, Integer> itens) {
+            this(normalizar(itens));
+        }
 
         public Quantidades {
-            if (pbr < 0 || chep < 0 || chapatex < 0 || descartaveis < 0) {
-                throw new RegraNegocioException("Quantidade de paletes não pode ser negativa");
-            }
+            itens = java.util.Collections.unmodifiableSortedMap(normalizar(itens));
+        }
+
+        private static java.util.SortedMap<String, Integer> normalizar(java.util.Map<String, Integer> m) {
+            java.util.TreeMap<String, Integer> r = new java.util.TreeMap<>();
+            if (m == null) return r;
+            m.forEach((k, v) -> {
+                if (k == null || k.isBlank()) throw new RegraNegocioException("Tipo de palete é obrigatório");
+                int q = v == null ? 0 : v;
+                if (q < 0) throw new RegraNegocioException("Quantidade de paletes não pode ser negativa");
+                if (q > 0) r.merge(k.trim().toUpperCase(java.util.Locale.ROOT), q, Integer::sum);
+            });
+            return r;
+        }
+
+        public static Quantidades de(String codigo, int quantidade) {
+            return new Quantidades(java.util.Map.of(codigo, quantidade));
+        }
+
+        public int de(String codigo) {
+            return itens.getOrDefault(codigo, 0);
+        }
+
+        public java.util.Set<String> tipos() {
+            return itens.keySet();
         }
 
         public int total() {
-            return pbr + chep + chapatex + descartaveis;
+            return itens.values().stream().mapToInt(Integer::intValue).sum();
+        }
+
+        public Quantidades mais(Quantidades o) {
+            java.util.Map<String, Integer> r = new java.util.TreeMap<>(itens);
+            o.itens.forEach((k, v) -> r.merge(k, v, Integer::sum));
+            return new Quantidades(r);
         }
 
         public Quantidades menos(Quantidades o) {
-            return new Quantidades(Math.max(0, pbr - o.pbr), Math.max(0, chep - o.chep),
-                    Math.max(0, chapatex - o.chapatex), Math.max(0, descartaveis - o.descartaveis));
+            java.util.Map<String, Integer> r = new java.util.TreeMap<>();
+            itens.forEach((k, v) -> r.put(k, Math.max(0, v - o.de(k))));
+            return new Quantidades(r);
         }
 
         boolean excede(Quantidades limite) {
-            return pbr > limite.pbr || chep > limite.chep || chapatex > limite.chapatex || descartaveis > limite.descartaveis;
+            return itens.entrySet().stream().anyMatch(e -> e.getValue() > limite.de(e.getKey()));
         }
     }
 
@@ -116,8 +153,7 @@ public class ValePalete {
     /** Registra devolução (total ou parcial). Quitado quando não resta saldo. */
     public void registrarDevolucao(Quantidades devolucao) {
         exigirAberto();
-        Quantidades novo = new Quantidades(devolvidos.pbr() + devolucao.pbr(), devolvidos.chep() + devolucao.chep(),
-                devolvidos.chapatex() + devolucao.chapatex(), devolvidos.descartaveis() + devolucao.descartaveis());
+        Quantidades novo = devolvidos.mais(devolucao);
         if (devolucao.total() == 0) throw new RegraNegocioException("Informe a quantidade devolvida");
         if (novo.excede(entregues)) throw new RegraNegocioException("Devolução maior que o saldo do vale");
         devolvidos = novo;

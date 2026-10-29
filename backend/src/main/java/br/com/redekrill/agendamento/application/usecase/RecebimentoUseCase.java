@@ -33,9 +33,17 @@ public class RecebimentoUseCase {
     private final NotificadorPush push;
     private final Transacao transacao;
     private final Clock clock;
+    private final ConferenteUseCase conferentes;
 
     public RecebimentoUseCase(AgendamentoRepositorio agendamentos, AgendamentoUseCase agendamentoUseCase,
                               AuditoriaUseCase auditoria, NotificadorPush push, Transacao transacao, Clock clock) {
+        this(agendamentos, agendamentoUseCase, auditoria, push, transacao, clock, null);
+    }
+
+    public RecebimentoUseCase(AgendamentoRepositorio agendamentos, AgendamentoUseCase agendamentoUseCase,
+                              AuditoriaUseCase auditoria, NotificadorPush push, Transacao transacao, Clock clock,
+                              ConferenteUseCase conferentes) {
+        this.conferentes = conferentes;
         this.agendamentos = agendamentos;
         this.agendamentoUseCase = agendamentoUseCase;
         this.auditoria = auditoria;
@@ -50,7 +58,8 @@ public class RecebimentoUseCase {
         Consumer<Agendamento> op = switch (cmd.acao()) {
             case CONFIRMAR -> Agendamento::confirmar;
             case CHEGADA -> a -> a.registrarChegada(cmd.placa(), cmd.motorista(), agora);
-            case INICIAR -> a -> a.iniciarRecebimento(cmd.conferente(), agora);
+            case INICIAR -> a -> a.iniciarRecebimento(conferentes == null ? cmd.conferente()
+                    : conferentes.validarParaConferencia(a.getCdId(), cmd.conferente()), agora);
             case CONCLUIR -> a -> a.concluirRecebimento(cmd.paletesRecebidos(), cmd.divergencia(), agora);
             case NAO_COMPARECEU -> a -> a.marcarNaoCompareceu(solicitante.usuario(), cmd.motivo(), agora);
         };

@@ -45,10 +45,10 @@ public class PaleteController {
     }
 
     public record MovimentoResp(Long id, LocalDate data, String tipo, Long cdId, String loja, String romaneio,
-                                ValePalete.Quantidades quantidades, int total, String observacao, String criadoPor,
+                                java.util.Map<String, Integer> quantidades, int total, String observacao, String criadoPor,
                                 OffsetDateTime criadoEm) {
         static MovimentoResp de(MovimentoPalete m) {
-            return new MovimentoResp(m.id(), m.data(), m.tipo().name(), m.cdId(), m.loja(), m.romaneio(), m.quantidades(),
+            return new MovimentoResp(m.id(), m.data(), m.tipo().name(), m.cdId(), m.loja(), m.romaneio(), m.quantidades().itens(),
                     m.quantidades().total(), m.observacao(), m.criadoPor(), m.criadoEm());
         }
     }
@@ -112,7 +112,7 @@ public class PaleteController {
     @PreAuthorize("hasRole('ADMIN')")
     public MovimentoResp registrar(@Valid @RequestBody Requisicoes.Movimento b, HttpServletRequest req) {
         return MovimentoResp.de(useCase.registrarMovimento(new PaleteFinanceiroUseCase.NovoMovimento(b.data(), b.tipo(),
-                b.cdId(), b.loja(), new ValePalete.Quantidades(b.pbr(), b.chep(), b.chapatex(), b.descartaveis()),
+                b.cdId(), b.loja(), new ValePalete.Quantidades(b.quantidades()),
                 b.observacao()), Requisicao.solicitante(req)));
     }
 

@@ -247,7 +247,7 @@ class ApiIntegracaoTest {
                 .andExpect(jsonPath("$.ocupacao.capacidade").value(480));
 
         String vale = mvc.perform(post("/api/v1/vales-palete").header("Authorization", admin).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"agendamentoId\":" + id + ",\"pbr\":10,\"chep\":0,\"chapatex\":0,\"descartaveis\":2}"))
+                        .content("{\"agendamentoId\":" + id + ",\"quantidades\":{\"PBR\":10,\"CHEP\":0,\"CHAPATEX\":0,\"DESCARTAVEL\":2}}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.placa").value("BRA2E19"))
                 .andReturn().getResponse().getContentAsString();
         long valeId = json.readTree(vale).get("id").asLong();
@@ -260,7 +260,7 @@ class ApiIntegracaoTest {
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/vales-palete/" + valeId + "/assinaturas/CONFERENTE")
                 .header("Authorization", admin)).andExpect(jsonPath("$.status").value("PENDENTE"));
         mvc.perform(post("/api/v1/vales-palete/" + valeId + "/devolucoes").header("Authorization", admin).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"pbr\":10,\"chep\":0,\"chapatex\":0,\"descartaveis\":2}")).andExpect(jsonPath("$.status").value("QUITADO"));
+                .content("{\"quantidades\":{\"PBR\":10,\"CHEP\":0,\"CHAPATEX\":0,\"DESCARTAVEL\":2}}")).andExpect(jsonPath("$.status").value("QUITADO"));
         mvc.perform(get("/api/v1/vales-palete/codigo/" + codigo).header("Authorization", usuario)).andExpect(jsonPath("$.id").value(valeId));
         mvc.perform(get("/api/v1/vales-palete").param("status", "QUITADO").param("fornecedor", "beta").header("Authorization", usuario))
                 .andExpect(jsonPath("$.length()").value(1));
@@ -347,7 +347,7 @@ class ApiIntegracaoTest {
 
         // conta-corrente, cobrança, recibo e lojas
         mvc.perform(post("/api/v1/vales-palete").header("Authorization", admin).contentType(json_)
-                .content("{\"agendamentoId\":" + id + ",\"pbr\":20,\"chep\":0,\"chapatex\":0,\"descartaveis\":0}")).andExpect(status().isCreated());
+                .content("{\"agendamentoId\":" + id + ",\"quantidades\":{\"PBR\":20,\"CHEP\":0,\"CHAPATEX\":0,\"DESCARTAVEL\":0}}")).andExpect(status().isCreated());
         mvc.perform(get("/api/v1/paletes/saldos").param("fornecedor", "beta").header("Authorization", usuario))
                 .andExpect(jsonPath("$[0].saldoEmAberto").value(20));
         long cob = json.readTree(mvc.perform(post("/api/v1/paletes/cobrancas").header("Authorization", admin).contentType(json_)
@@ -359,9 +359,59 @@ class ApiIntegracaoTest {
         mvc.perform(get("/api/v1/paletes/saldos").param("fornecedor", "beta").header("Authorization", usuario))
                 .andExpect(jsonPath("$[0].saldoEmAberto").value(15));
         mvc.perform(post("/api/v1/paletes/movimentos").header("Authorization", admin).contentType(json_)
-                        .content("{\"tipo\":\"ENVIO\",\"loja\":\"Loja 12\",\"pbr\":30,\"chep\":0,\"chapatex\":0,\"descartaveis\":0}"))
+                        .content("{\"tipo\":\"ENVIO\",\"loja\":\"Loja 12\",\"quantidades\":{\"PBR\":30,\"CHEP\":0,\"CHAPATEX\":0,\"DESCARTAVEL\":0}}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.romaneio").value(org.hamcrest.Matchers.startsWith("RM-")));
-        mvc.perform(get("/api/v1/paletes/lojas").header("Authorization", usuario)).andExpect(jsonPath("$[0].pbr").value(30));
+        mvc.perform(get("/api/v1/paletes/lojas").header("Authorization", usuario)).andExpect(jsonPath("$[0].porTipo.PBR").value(30));
         mvc.perform(get("/api/v1/paletes/movimentos").header("Authorization", usuario)).andExpect(jsonPath("$.length()").value(1));
+
+        // tipos de palete configuráveis: semeados, CRUD só ADMIN, código imutável, tipo novo vale no vale
+        mvc.perform(get("/api/v1/tipos-palete").header("Authorization", usuario)).andExpect(jsonPath("$.length()").value(4))
+                .andExpect(jsonPath("$[0].codigo").value("PBR"));
+        mvc.perform(post("/api/v1/tipos-palete").header("Authorization", usuario).contentType(json_)
+                .content("{\"codigo\":\"PLASTICO\",\"nome\":\"Plástico\"}")).andExpect(status().isForbidden());
+        long tipo = json.readTree(mvc.perform(post("/api/v1/tipos-palete").header("Authorization", admin).contentType(json_)
+                        .content("{\"codigo\":\"plastico\",\"nome\":\"Plástico\",\"valorReposicao\":80}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.codigo").value("PLASTICO"))
+                .andReturn().getResponse().getContentAsString()).get("id").asLong();
+        mvc.perform(post("/api/v1/vales-palete").header("Authorization", admin).contentType(json_)
+                .content("{\"fornecedor\":\"Distribuidora Beta\",\"quantidades\":{\"PLASTICO\":3}}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.entregues.PLASTICO").value(3)).andExpect(jsonPath("$.totalSaldo").value(3));
+        mvc.perform(post("/api/v1/vales-palete").header("Authorization", admin).contentType(json_)
+                .content("{\"fornecedor\":\"Distribuidora Beta\",\"quantidades\":{\"MADEIRA\":3}}")).andExpect(status().isUnprocessableEntity());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/tipos-palete/" + tipo)
+                .header("Authorization", admin)).andExpect(status().isUnprocessableEntity());
+        mvc.perform(put("/api/v1/tipos-palete/" + tipo).header("Authorization", admin).contentType(json_)
+                .content("{\"nome\":\"Plástico\",\"ativo\":false}")).andExpect(jsonPath("$.ativo").value(false));
+        mvc.perform(get("/api/v1/tipos-palete").param("ativos", "true").header("Authorization", usuario)).andExpect(jsonPath("$.length()").value(4));
+
+        // e-mail da cobrança (recibo, pois foi paga) e WhatsApp como link wa.me (API desabilitada por padrão)
+        mvc.perform(get("/api/v1/notificacoes/cobrancas/" + cob + "/email").header("Authorization", usuario))
+                .andExpect(jsonPath("$.assunto").value(org.hamcrest.Matchers.startsWith("Recibo RP-")))
+                .andExpect(jsonPath("$.contato.email").value("logistica@beta.com.br"));
+        mvc.perform(post("/api/v1/notificacoes/cobrancas/" + cob + "/email").header("Authorization", usuario).contentType(json_)
+                .content("{\"para\":\"fin@beta.com.br\"}")).andExpect(status().isForbidden());
+        mvc.perform(post("/api/v1/notificacoes/cobrancas/" + cob + "/email").header("Authorization", admin).contentType(json_)
+                .content("{\"para\":\"fin@beta.com.br\"}")).andExpect(jsonPath("$.status").value("ENVIADO"));
+        mvc.perform(get("/api/v1/notificacoes/cobrancas/" + cob + "/whatsapp").param("telefone", "(11) 98888-7777").header("Authorization", usuario))
+                .andExpect(jsonPath("$.link").value(org.hamcrest.Matchers.startsWith("https://wa.me/5511988887777?text=")))
+                .andExpect(jsonPath("$.apiHabilitada").value(false));
+        mvc.perform(post("/api/v1/notificacoes/cobrancas/" + cob + "/whatsapp").header("Authorization", admin).contentType(json_)
+                .content("{\"telefone\":\"11988887777\"}")).andExpect(jsonPath("$.status").value("LINK_GERADO"));
+        mvc.perform(get("/api/v1/notificacoes/agendamentos/" + id + "/whatsapp").header("Authorization", usuario))
+                .andExpect(jsonPath("$.mensagem").value(org.hamcrest.Matchers.containsString("pedido 98765")));
+        mvc.perform(get("/api/v1/notificacoes/cobrancas/" + cob + "/envios").header("Authorization", usuario))
+                .andExpect(jsonPath("$.length()").value(2)).andExpect(jsonPath("$[1].canal").value("EMAIL"));
+
+        // conferentes por CD
+        long conf = json.readTree(mvc.perform(post("/api/v1/conferentes").header("Authorization", admin).contentType(json_)
+                .content("{\"cdId\":1,\"nome\":\"Carlos Lima\"}")).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asLong();
+        mvc.perform(post("/api/v1/conferentes").header("Authorization", admin).contentType(json_)
+                .content("{\"cdId\":1,\"nome\":\"carlos lima\"}")).andExpect(status().isUnprocessableEntity());
+        mvc.perform(get("/api/v1/conferentes").param("cdId", "1").param("ativos", "true").header("Authorization", usuario))
+                .andExpect(jsonPath("$.length()").value(1));
+        // pausado: o CD volta a aceitar conferente livre (outros testes usam o CD 1)
+        mvc.perform(put("/api/v1/conferentes/" + conf).header("Authorization", admin).contentType(json_)
+                .content("{\"cdId\":1,\"nome\":\"Carlos Lima\",\"ativo\":false}")).andExpect(jsonPath("$.ativo").value(false));
     }
 }

@@ -29,6 +29,8 @@ export const routes = [
   { path: '/cadastros/fornecedores', name: 'fornecedores', component: () => import('./views/FornecedoresView.vue'), meta: { admin: true, titulo: 'Fornecedores' } },
   { path: '/cadastros/produtos', name: 'produtos', component: () => import('./views/ProdutosView.vue'), meta: { admin: true, titulo: 'Produtos e pesos' } },
   { path: '/cadastros/descarga', name: 'parametros-descarga', component: () => import('./views/ParametrosDescargaView.vue'), meta: { admin: true, titulo: 'Tempos de descarga' } },
+  { path: '/cadastros/tipos-palete', name: 'tipos-palete', component: () => import('./views/TiposPaleteView.vue'), meta: { admin: true, titulo: 'Tipos de palete' } },
+  { path: '/cadastros/conferentes', name: 'conferentes', component: () => import('./views/ConferentesView.vue'), meta: { admin: true, titulo: 'Conferentes' } },
   { path: '/auditoria', name: 'auditoria', component: () => import('./views/AuditoriaView.vue'), meta: { admin: true, titulo: 'Auditoria' } },
   { path: '/:pathMatch(.*)*', redirect: '/inicio' }
 ]

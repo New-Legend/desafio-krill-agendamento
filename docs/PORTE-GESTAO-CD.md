@@ -33,7 +33,12 @@ Legenda: ✅ portado · 🟡 portado em parte / adaptado · ⏳ pendente · 🔮
 | `/recebimento-produtos` (novo, importar-nf, conferir, exportar) | Itens e importação de XML da NF-e | ✅ | "Importar XML" no detalhe (após a chegada): lê `nfeProc`/`NFe` com parser protegido contra XXE e limite de 2 MB, cria os produtos que faltam, calcula o peso pelos pesos cadastrados, compara com o peso da NF (5% de tolerância), vincula o fornecedor pelo CNPJ e avisa itens sem peso. Chave duplicada é recusada |
 | `/recebimento/produtos/pesos` | Peso por produto | ✅ | Cadastros → Produtos e pesos (filtro "somente sem peso", peso bruto e itens por palete) |
 | `/recebimento-fornecedores` | Lista de fornecedores | ✅ | Cadastros → Fornecedores |
-| `/recebimento-whatsapp` | Aviso por WhatsApp | 🔮 | Futuro. Nesta entrega o aviso é por e-mail + Web Push; o WhatsApp entraria como mais um adaptador da porta de notificação |
+| `/recebimento-whatsapp` | Aviso por WhatsApp | ✅ | Canal plugável (porta `NotificadorWhatsApp`). Padrão: botão **WhatsApp** no detalhe do agendamento e na cobrança gera link `wa.me` com a mensagem pronta (o usuário confirma o envio no próprio WhatsApp) e registra o uso. Adaptador da API do WhatsApp Business (Cloud API) pronto e **desligado**; liga com `WHATSAPP_PROVEDOR=cloud-api` + token. Nenhum envio externo automático por padrão |
+| `/recebimento-conferentes` | Conferentes por CD | ✅ | Cadastros → Conferentes (nome completo, único por CD, ativo/pausado). Ao iniciar a conferência, a tela mostra a lista do CD; se o CD tem conferentes ativos, o servidor só aceita um deles (sem cadastro continua texto livre, como no desafio) |
+| `/patio-docas` (YMS) | Fila do pátio e alocação de doca | ⏳ | Não portado: é o módulo de pátio (YMS), compartilhado com expedição. Aqui a portaria registra chegada, espera e descarga por agendamento |
+| Recebimento por e-mail (`recebimento-email.ts`) | Ler XML de NF-e que chega numa caixa de e-mail | 🔮 | Exige caixa de entrada própria; nesta entrega o XML é importado manualmente no detalhe |
+| Cobrança de descarga por modal (`recebimento-cobranca.ts`) | Taxa de descarga sider/baú/granel por palete fechado/gerado | 🟡 | Aqui o custo é por palete e por tipo de caminhão (Cadastros → Tempos de descarga). As tarifas por modal e palete fechado × gerado não foram portadas |
+| `/recebimento-produtos/exportar`, `exportar-excel`, `novo` | Exportar catálogo e incluir produto avulso | 🟡 | Produtos entram pela NF-e e o peso é editado no cadastro; exportação do catálogo não foi portada |
 | `/recebimento/rotina`, `/recebimento-loja` | Rotina diária e visão da loja | ✅ | **Rotina do dia**: amanhã sem confirmação, atrasados (+30 min), espera acima da tolerância, descarga longa, recebidos sem NF-e, divergências, vales pendentes e cobranças vencidas, cada item com link. **Paletes nas lojas**: saldo por loja |
 
 ## Vale-palete
@@ -46,8 +51,8 @@ Legenda: ✅ portado · 🟡 portado em parte / adaptado · ⏳ pendente · 🔮
 | Devolução / saldo | Baixa de paletes devolvidos | ✅ | Registrar devolução; quita sozinho quando o saldo zera |
 | Busca por código | Leitura do código VP | ✅ | Campo de código na lista (`VP-AAAAMMDD-NNNN`) |
 | `/vale-palete/conta-corrente` | Saldo por fornecedor | ✅ | Paletes → Conta-corrente: entregues − devolvidos − cobrados, valor a receber |
-| `/vale-palete/configuracoes` | Tipos de palete configuráveis | ⏳ | Tipos fixos (PBR, CHEP, Chapatex, descartáveis), iguais aos usados no CD |
-| `/paletes/cobranca`, `/pagar`, `/recibos`, `/email` | Cobrança de paletes e recibos | ✅ | Cobrar (limitado ao saldo), receber (PIX, boleto, dinheiro, desconto na NF, devolução física) com **recibo impresso** `RP-AAAAMMDD-NNNN` e logo, cancelar com motivo. O e-mail da cobrança ficou de fora (🔮) |
+| `/vale-palete/configuracoes` | Tipos de palete configuráveis | ✅ / 🟡 | Cadastros → **Tipos de palete** (ADMIN): código (imutável), nome, valor de reposição, ordem e situação. Semente: PBR, CHEP, Chapatex, Descartável. Vales e romaneios guardam `{CÓDIGO: quantidade}` (JSONB, migração V5 converte os dados antigos); novos só aceitam tipos ativos; tipo usado não pode ser excluído, só inativado; sempre fica ao menos um ativo. O valor de reposição sugere o preço na cobrança. Não portados da mesma tela: tipos por CD, "exigir as duas assinaturas" e agrupamento por transportadora |
+| `/paletes/cobranca`, `/pagar`, `/recibos`, `/email` | Cobrança de paletes e recibos | ✅ | Cobrar (limitado ao saldo), receber (PIX, boleto, dinheiro, desconto na NF, devolução física) com **recibo impresso** `RP-AAAAMMDD-NNNN` e logo, cancelar com motivo. **E-mail** da cobrança (ou do recibo, se paga) pelo SMTP do sistema (Mailpit no Docker), com template da Rede Krill, pré-visualização, destinatário sugerido (cadastro do fornecedor ou último agendamento) e **histórico de envios** (`notificacao_envio` + auditoria). Diferença: o Gestão CD anexa PDF e também envia o vale; aqui vai o HTML da cobrança/recibo |
 | `/paletes/retorno`, `/romaneios`, `/saldo-inicial`, `/movimentos`, `/rede` | Movimento entre lojas | ✅ | Paletes → Paletes nas lojas: romaneio `RM-AAAAMMDD-NNNN` de envio, retorno ou saldo inicial, por tipo de palete, e saldo por loja |
 
 ## Visual
@@ -57,4 +62,6 @@ Padrão do Gestão CD aplicado: telas densas e em pt-BR, campos compactos cinza-
 ## Resumo
 
 - **Portado:** agendamento completo, dashboard, link público com remarcação pelo fornecedor, remarcação pelo CD, multi-CD, cadastros de fornecedores, produtos/pesos e tempos de descarga, importação do XML da NF-e, portaria e conferência, divergências com CSV, relatório de descarga, rotina do dia, não comparecimento, relatório/CSV, auditoria, vale-palete com assinatura/impressão/devolução, conta-corrente, cobrança e recibo de paletes, romaneios e saldo por loja.
-- **Pendente / futuro:** WhatsApp (🔮), e-mail de cobrança de paletes (🔮), tipos de palete configuráveis (⏳).
+- **Portado nesta rodada:** tipos de palete configuráveis, e-mail de cobrança/recibo de paletes com histórico, WhatsApp como canal plugável (link wa.me; API do WhatsApp Business pronta e desligada) e conferentes por CD.
+- **Pendente / futuro:** pátio e docas (YMS, ⏳), leitura de NF-e por caixa de e-mail (🔮), tarifas de descarga por modal (🟡), exportação do catálogo de produtos (🟡), PDF anexado e e-mail do vale (🟡), tipos por CD e assinaturas obrigatórias configuráveis (🟡).
+- **Fora de propósito:** níveis de acesso especiais do Gestão CD, credenciais e dados reais da Krill não foram copiados.

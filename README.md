@@ -65,7 +65,10 @@ Relatório de cobertura: `backend/target/site/jacoco/index.html`.
 - **NF-e:** importação do XML no detalhe do agendamento (parser sem XXE, até 2 MB), com criação dos produtos, peso calculado × peso da nota e avisos.
 - **Relatórios:** divergências (CSV), tempos de espera e descarga (CSV) e **rotina do dia** com as pendências do recebimento.
 - **Paletes:** conta-corrente por fornecedor, cobrança com recibo impresso, romaneios de envio/retorno para as lojas e saldo por loja.
-- WhatsApp fica como evolução futura; os avisos saem por e-mail e Web Push.
+- **Tipos de palete configuráveis** (PBR, CHEP, Chapatex, Descartável + os que o CD criar), usados no vale, na devolução e nos romaneios.
+- **E-mail da cobrança de paletes** (ou do recibo) pelo SMTP/Mailpit, com histórico de envios.
+- **WhatsApp:** botão que abre o `wa.me` com a mensagem pronta (agendamento e cobrança). Envio automático pela API do WhatsApp Business é opcional (`WHATSAPP_PROVEDOR=cloud-api`), desligado por padrão.
+- **Conferentes por CD:** a conferência só inicia com um conferente ativo do CD (quando houver cadastro).
 
 ## Arquitetura
 

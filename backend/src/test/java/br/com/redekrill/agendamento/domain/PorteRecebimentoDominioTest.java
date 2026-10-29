@@ -239,16 +239,16 @@ class PorteRecebimentoDominioTest {
 
     @Test
     void movimentoComSinal() {
-        var q = new ValePalete.Quantidades(10, 2, 1, 0);
+        var q = br.com.redekrill.agendamento.TestePaletes.q(10, 2, 1, 0);
         MovimentoPalete envio = new MovimentoPalete(null, LocalDate.of(2026, 11, 2), MovimentoPalete.Tipo.ENVIO, 1L, "Loja 1",
                 "RM-1", q, null, "admin", AGORA);
         assertThat(envio.total()).isEqualTo(13);
         MovimentoPalete retorno = new MovimentoPalete(null, LocalDate.of(2026, 11, 2), MovimentoPalete.Tipo.RETORNO, 1L, "Loja 1",
                 "RM-2", q, null, "admin", AGORA);
-        assertThat(retorno.pbr()).isEqualTo(-10);
-        assertThat(retorno.chep()).isEqualTo(-2);
-        assertThat(retorno.chapatex()).isEqualTo(-1);
-        assertThat(retorno.descartaveis()).isZero();
+        assertThat(retorno.de("PBR")).isEqualTo(-10);
+        assertThat(retorno.de("CHEP")).isEqualTo(-2);
+        assertThat(retorno.de("CHAPATEX")).isEqualTo(-1);
+        assertThat(retorno.de("DESCARTAVEL")).isZero();
         assertThatThrownBy(() -> new MovimentoPalete(null, null, MovimentoPalete.Tipo.ENVIO, 1L, "L", "R", q, null, null, null))
                 .isInstanceOf(RegraNegocioException.class);
         assertThatThrownBy(() -> new MovimentoPalete(null, LocalDate.now(), null, 1L, "L", "R", q, null, null, null))

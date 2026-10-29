@@ -44,6 +44,10 @@ services:
       BLUESOFT_TENANT: ${BLUESOFT_TENANT:-}
       BLUESOFT_CLIENT_ID: ${BLUESOFT_CLIENT_ID:-}
       BLUESOFT_CLIENT_SECRET: ${BLUESOFT_CLIENT_SECRET:-}
+      # WhatsApp: desabilitado = só link wa.me; cloud-api liga o envio pela API do WhatsApp Business
+      WHATSAPP_PROVEDOR: ${WHATSAPP_PROVEDOR:-desabilitado}
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
     ports:
       - "8080:8080"
 

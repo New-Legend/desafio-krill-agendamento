@@ -5,6 +5,7 @@ import { isAdmin } from '../sessao'
 import { fmtData, isoData } from '../utils'
 import { useEnvio } from '../composables/useEnvio'
 import { useNotificar } from '../composables/useNotificar'
+import { somar, useTiposPalete, zerar } from '../composables/useTiposPalete'
 
 const notificar = useNotificar()
 const { enviando, enviar } = useEnvio()
@@ -16,18 +17,21 @@ const erros = ref({})
 const TIPOS = [{ label: 'Envio para a loja', value: 'ENVIO' }, { label: 'Retorno da loja', value: 'RETORNO' }, { label: 'Saldo inicial', value: 'SALDO_INICIAL' }]
 const ROTULO = { ENVIO: ['Envio', 'info'], RETORNO: ['Retorno', 'success'], SALDO_INICIAL: ['Saldo inicial', 'secondary'] }
 const form = reactive({})
-const total = computed(() => (form.pbr || 0) + (form.chep || 0) + (form.chapatex || 0) + (form.descartaveis || 0))
+const tiposPalete = useTiposPalete()
+const total = computed(() => somar(form.quantidades))
+const colunas = computed(() => tiposPalete.colunas(...lojas.value.map((l) => l.porTipo)))
 
 async function carregar() {
   try {
     const l = busca.value.trim() || null
+    await tiposPalete.carregar()
     ;[lojas.value, movimentos.value] = await Promise.all([api('/paletes/lojas', { params: { loja: l } }), api('/paletes/movimentos', { params: { loja: l } })])
   } catch (e) {
     notificar.erro(e)
   }
 }
 function novo(loja = '') {
-  Object.assign(form, { data: new Date(), tipo: 'ENVIO', loja, pbr: 0, chep: 0, chapatex: 0, descartaveis: 0, observacao: '' })
+  Object.assign(form, { data: new Date(), tipo: 'ENVIO', loja, quantidades: zerar(tiposPalete.ativos.value.map((t) => t.codigo)), observacao: '' })
   erros.value = {}
   visivel.value = true
 }
@@ -65,10 +69,7 @@ defineExpose({ novo, salvar, form, erros })
     <DataTable :value="lojas" size="small" striped-rows>
       <template #empty><div class="vazio">Nenhum movimento com lojas</div></template>
       <Column field="loja" header="Loja" sortable />
-      <Column field="pbr" header="PBR" class="num" />
-      <Column field="chep" header="CHEP" class="num" />
-      <Column field="chapatex" header="Chapatex" class="num" />
-      <Column field="descartaveis" header="Descartáveis" class="num" />
+      <Column v-for="c in colunas" :key="c" :header="tiposPalete.rotulo(c)" class="num"><template #body="{ data }">{{ data.porTipo[c] || 0 }}</template></Column>
       <Column header="Total" class="num" sortable sort-field="total"><template #body="{ data }"><strong>{{ data.total }}</strong></template></Column>
       <Column header="Último movimento"><template #body="{ data }">{{ fmtData(data.ultimoMovimento) }}</template></Column>
       <Column v-if="isAdmin" header=""><template #body="{ data }"><Button label="Movimentar" icon="pi pi-arrow-right-arrow-left" size="small" class="btn-secundario" @click="novo(data.loja)" /></template></Column>
@@ -82,7 +83,7 @@ defineExpose({ novo, salvar, form, erros })
       <Column header="Data"><template #body="{ data }">{{ fmtData(data.data) }}</template></Column>
       <Column header="Tipo"><template #body="{ data }"><Tag :value="ROTULO[data.tipo][0]" :severity="ROTULO[data.tipo][1]" /></template></Column>
       <Column field="loja" header="Loja" />
-      <Column header="PBR / CHEP / Chapatex / Desc." class="num"><template #body="{ data }">{{ data.quantidades.pbr }} / {{ data.quantidades.chep }} / {{ data.quantidades.chapatex }} / {{ data.quantidades.descartaveis }}</template></Column>
+      <Column header="Paletes por tipo"><template #body="{ data }">{{ Object.entries(data.quantidades).map(([k, n]) => `${tiposPalete.rotulo(k)} ${n}`).join(' · ') }}</template></Column>
       <Column field="total" header="Total" class="num" />
       <Column field="criadoPor" header="Por" />
     </DataTable>
@@ -93,7 +94,7 @@ defineExpose({ novo, salvar, form, erros })
       <div class="campo c6"><label for="mt">Tipo</label><Select v-model="form.tipo" input-id="mt" :options="TIPOS" option-label="label" option-value="value" /></div>
       <div class="campo c6"><label for="md">Data</label><DatePicker v-model="form.data" input-id="md" date-format="dd/mm/yy" /></div>
       <div class="campo c12"><label for="ml">Loja <span class="obrig">*</span></label><InputText id="ml" v-model="form.loja" maxlength="80" :invalid="!!erros.loja" /><span v-if="erros.loja" class="erro">{{ erros.loja }}</span></div>
-      <div v-for="k in ['pbr', 'chep', 'chapatex', 'descartaveis']" :key="k" class="campo c3"><label :for="`m${k}`">{{ { pbr: 'PBR', chep: 'CHEP', chapatex: 'Chapatex', descartaveis: 'Descartáveis' }[k] }}</label><InputNumber v-model="form[k]" :input-id="`m${k}`" :min="0" :max="10000" /></div>
+      <div v-for="t in tiposPalete.ativos.value" :key="t.codigo" class="campo c3"><label :for="`m${t.codigo}`">{{ t.nome }}</label><InputNumber v-model="form.quantidades[t.codigo]" :input-id="`m${t.codigo}`" :min="0" :max="10000" /></div>
       <span v-if="erros.total" class="erro c12">{{ erros.total }}</span>
       <div class="campo c12"><label for="mo">Observação</label><InputText id="mo" v-model="form.observacao" maxlength="255" /></div>
       <button type="submit" hidden />

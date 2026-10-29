@@ -7,6 +7,8 @@ import ContaCorrenteView from '../../src/views/ContaCorrenteView.vue'
 import ReciboPaleteView from '../../src/views/ReciboPaleteView.vue'
 import MovimentosPaleteView from '../../src/views/MovimentosPaleteView.vue'
 import NotasFiscais from '../../src/components/NotasFiscais.vue'
+import EmailCobranca from '../../src/components/EmailCobranca.vue'
+import WhatsAppAviso from '../../src/components/WhatsAppAviso.vue'
 import { hoje, somarDias } from '../../src/utils'
 import { erroHttp, flushPromises, logar, montar, sair, simularApi } from '../montar'
 
@@ -105,6 +107,12 @@ describe('relatórios do recebimento', () => {
   })
 })
 
+const TIPOS = [
+  { id: 1, codigo: 'PBR', nome: 'PBR', valorReposicao: 45, ordem: 1, ativo: true },
+  { id: 2, codigo: 'CHEP', nome: 'CHEP', valorReposicao: 0, ordem: 2, ativo: true },
+  { id: 5, codigo: 'PLASTICO', nome: 'Plástico', valorReposicao: 80, ordem: 5, ativo: false }
+]
+
 describe('paletes', () => {
   beforeEach(() => logar('ADMIN'))
   const saldo = { fornecedor: 'Bebidas Vale', vales: 2, entregues: 25, devolvidos: 5, cobrados: 0, pagos: 0, saldoEmAberto: 20, valorEmAberto: 0 }
@@ -153,20 +161,27 @@ describe('paletes', () => {
     expect(window.print).toHaveBeenCalled()
   })
 
-  it('paletes nas lojas: visão por loja e novo romaneio', async () => {
-    const api = simularApi({ 'GET /paletes/lojas': [{ loja: 'Loja 12', pbr: 18, chep: 0, chapatex: 0, descartaveis: 0, total: 18, ultimoMovimento: hoje() }], 'GET /paletes/movimentos': [{ id: 1, romaneio: 'RM-1', data: hoje(), tipo: 'ENVIO', loja: 'Loja 12', quantidades: { pbr: 30, chep: 0, chapatex: 0, descartaveis: 0 }, total: 30 }], 'POST /paletes/movimentos': { romaneio: 'RM-2' } })
+  it('paletes nas lojas: colunas pelos tipos configurados e novo romaneio', async () => {
+    const api = simularApi({
+      'GET /tipos-palete': TIPOS,
+      'GET /paletes/lojas': [{ loja: 'Loja 12', porTipo: { PBR: 18, PLASTICO: 2 }, total: 20, ultimoMovimento: hoje() }],
+      'GET /paletes/movimentos': [{ id: 1, romaneio: 'RM-1', data: hoje(), tipo: 'ENVIO', loja: 'Loja 12', quantidades: { PBR: 30 }, total: 30 }],
+      'POST /paletes/movimentos': { romaneio: 'RM-2' }
+    })
     const { w, tela } = await montar(MovimentosPaleteView)
     expect(w.text()).toContain('Loja 12')
     expect(w.text()).toContain('RM-1')
+    expect(w.text()).toContain('Plástico')
+    expect(w.text()).toContain('PBR 30')
     await botao(w, 'Movimentar').trigger('click')
-    tela.vm.form.pbr = 0
+    expect(Object.keys(tela.vm.form.quantidades)).toEqual(['PBR', 'CHEP'])
     await tela.vm.salvar()
     expect(tela.vm.erros.total).toBeTruthy()
     tela.vm.form.tipo = 'RETORNO'
-    tela.vm.form.pbr = 12
+    tela.vm.form.quantidades.PBR = 12
     await tela.vm.salvar()
     await flushPromises()
-    expect(api.ultima('POST /paletes/movimentos').corpo).toMatchObject({ tipo: 'RETORNO', loja: 'Loja 12', pbr: 12 })
+    expect(api.ultima('POST /paletes/movimentos').corpo).toMatchObject({ tipo: 'RETORNO', loja: 'Loja 12', quantidades: { PBR: 12, CHEP: 0 } })
   })
 })
 
@@ -191,5 +206,46 @@ describe('NF-e no detalhe do agendamento', () => {
     const grande = { size: 3 * 1024 * 1024 }
     await tela.vm.importar({ target: { files: [grande], value: 'x' } })
     expect(document.body.textContent).toContain('XML acima de 2 MB')
+  })
+})
+
+describe('cobrança por e-mail e WhatsApp', () => {
+  beforeEach(() => logar('ADMIN'))
+  const cob = { id: 5, fornecedor: 'Bebidas Vale', quantidade: 10, valorUnitario: 45, valorTotal: 450, vencimento: hoje(), vencida: false, status: 'ABERTA' }
+
+  it('e-mail: pré-visualiza, valida destinatário e envia', async () => {
+    const api = simularApi({
+      'GET /paletes/saldos': [], 'GET /paletes/cobrancas': [cob], 'GET /tipos-palete': TIPOS,
+      'GET /notificacoes/cobrancas/5/email': { assunto: 'Cobrança de paletes nº 5', html: '<p>Bebidas Vale</p>', texto: 'x', contato: { email: 'fin@vale.com.br' } },
+      'GET /notificacoes/cobrancas/5/envios': [],
+      'POST /notificacoes/cobrancas/5/email': { status: 'ENVIADO', destinatario: 'fin@vale.com.br' }
+    })
+    const { w } = await montar(ContaCorrenteView, { rota: '/paletes/cobrancas' })
+    const email = w.findComponent(EmailCobranca)
+    await email.vm.abrir()
+    expect(email.vm.para).toBe('fin@vale.com.br')
+    email.vm.para = 'invalido'
+    await email.vm.enviarEmail()
+    expect(email.vm.erro).toBe('Informe um e-mail válido')
+    email.vm.para = 'fin@vale.com.br'
+    await email.vm.enviarEmail()
+    await flushPromises()
+    expect(api.ultima('POST /notificacoes/cobrancas/5/email').corpo).toEqual({ para: 'fin@vale.com.br' })
+  })
+
+  it('WhatsApp: monta link wa.me e registra a abertura', async () => {
+    const api = simularApi({
+      'GET /paletes/saldos': [], 'GET /paletes/cobrancas': [cob], 'GET /tipos-palete': TIPOS,
+      'GET /notificacoes/cobrancas/5/whatsapp': { telefone: '5511988887777', mensagem: 'Olá', link: 'https://wa.me/5511988887777?text=Ol%C3%A1', apiHabilitada: false, provedor: 'wa.me' },
+      'POST /notificacoes/cobrancas/5/whatsapp': { status: 'LINK_GERADO' }
+    })
+    const { w } = await montar(ContaCorrenteView, { rota: '/paletes/cobrancas' })
+    const z = w.findComponent(WhatsAppAviso)
+    await z.vm.abrir()
+    expect(z.vm.telefone).toBe('5511988887777')
+    expect(z.vm.dados.link).toContain('https://wa.me/')
+    await z.vm.registrar()
+    await flushPromises()
+    expect(api.ultima('POST /notificacoes/cobrancas/5/whatsapp').corpo).toEqual({ telefone: '5511988887777' })
   })
 })

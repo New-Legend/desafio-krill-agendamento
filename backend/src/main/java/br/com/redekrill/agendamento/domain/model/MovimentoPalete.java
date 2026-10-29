@@ -29,9 +29,7 @@ public record MovimentoPalete(Long id, LocalDate data, Tipo tipo, Long cdId, Str
         if (quantidades == null || quantidades.total() == 0) throw new RegraNegocioException("Informe ao menos um palete");
     }
 
-    public int pbr() { return tipo.sinal() * quantidades.pbr(); }
-    public int chep() { return tipo.sinal() * quantidades.chep(); }
-    public int chapatex() { return tipo.sinal() * quantidades.chapatex(); }
-    public int descartaveis() { return tipo.sinal() * quantidades.descartaveis(); }
+    /** Quantidade do tipo com o sinal do movimento (RETORNO negativo). */
+    public int de(String codigo) { return tipo.sinal() * quantidades.de(codigo); }
     public int total() { return tipo.sinal() * quantidades.total(); }
 }

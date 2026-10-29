@@ -46,6 +46,12 @@ app:
       client-id: ${BLUESOFT_CLIENT_ID:}
       client-secret: ${BLUESOFT_CLIENT_SECRET:}
       timeout-segundos: ${BLUESOFT_TIMEOUT:10}
+  whatsapp:
+    provedor: ${WHATSAPP_PROVEDOR:desabilitado}
+    api-url: ${WHATSAPP_API_URL:https://graph.facebook.com/v20.0}
+    token: ${WHATSAPP_TOKEN:}
+    phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+    timeout-segundos: ${WHATSAPP_TIMEOUT:10}
   cors-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:8081}
   jwt:
     secret: ${JWT_SECRET:desenvolvimento-local-troque-este-segredo-32bytes!}

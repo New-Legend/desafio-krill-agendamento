@@ -31,6 +31,14 @@ import br.com.redekrill.agendamento.application.usecase.CadastroRecebimentoUseCa
 import br.com.redekrill.agendamento.application.usecase.NotaFiscalUseCase;
 import br.com.redekrill.agendamento.application.usecase.PaleteFinanceiroUseCase;
 import br.com.redekrill.agendamento.application.usecase.RelatorioRecebimentoUseCase;
+import br.com.redekrill.agendamento.application.port.CanalEmailDocumentos;
+import br.com.redekrill.agendamento.application.port.ConferenteRepositorio;
+import br.com.redekrill.agendamento.application.port.NotificacaoEnvioRepositorio;
+import br.com.redekrill.agendamento.application.port.NotificadorWhatsApp;
+import br.com.redekrill.agendamento.application.port.TipoPaleteRepositorio;
+import br.com.redekrill.agendamento.application.usecase.ConferenteUseCase;
+import br.com.redekrill.agendamento.application.usecase.NotificacaoUseCase;
+import br.com.redekrill.agendamento.application.usecase.TipoPaleteUseCase;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -70,8 +78,8 @@ public class UseCaseConfig {
 
     @Bean
     RecebimentoUseCase recebimentoUseCase(AgendamentoRepositorio ag, AgendamentoUseCase uc, AuditoriaUseCase a,
-                                          NotificadorPush push, Transacao tx, Clock clock) {
-        return new RecebimentoUseCase(ag, uc, a, push, tx, clock);
+                                          NotificadorPush push, Transacao tx, Clock clock, ConferenteUseCase conf) {
+        return new RecebimentoUseCase(ag, uc, a, push, tx, clock, conf);
     }
 
     @Bean
@@ -82,8 +90,8 @@ public class UseCaseConfig {
 
     @Bean
     ValePaleteUseCase valePaleteUseCase(ValePaleteRepositorio v, AgendamentoRepositorio ag, AuditoriaUseCase a,
-                                        Transacao tx, Clock clock) {
-        return new ValePaleteUseCase(v, ag, a, tx, clock);
+                                        Transacao tx, Clock clock, TipoPaleteUseCase tipos) {
+        return new ValePaleteUseCase(v, ag, a, tx, clock, tipos);
     }
 
     @Bean
@@ -119,7 +127,24 @@ public class UseCaseConfig {
     @Bean
     PaleteFinanceiroUseCase paleteFinanceiroUseCase(ValePaleteRepositorio v, CobrancaPaleteRepositorio c,
                                                     MovimentoPaleteRepositorio m, CentroDistribuicaoRepositorio cds,
-                                                    AuditoriaUseCase a, Transacao tx, Clock clock) {
-        return new PaleteFinanceiroUseCase(v, c, m, cds, a, tx, clock);
+                                                    AuditoriaUseCase a, Transacao tx, Clock clock, TipoPaleteUseCase tipos) {
+        return new PaleteFinanceiroUseCase(v, c, m, cds, a, tx, clock, tipos);
+    }
+
+    @Bean
+    TipoPaleteUseCase tipoPaleteUseCase(TipoPaleteRepositorio r, AuditoriaUseCase a, Transacao tx) {
+        return new TipoPaleteUseCase(r, a, tx);
+    }
+
+    @Bean
+    ConferenteUseCase conferenteUseCase(ConferenteRepositorio r, CentroDistribuicaoRepositorio cds, AuditoriaUseCase a, Transacao tx) {
+        return new ConferenteUseCase(r, cds, a, tx);
+    }
+
+    @Bean
+    NotificacaoUseCase notificacaoUseCase(PaleteFinanceiroUseCase p, AgendamentoUseCase ag, FornecedorRepositorio f,
+                                          CanalEmailDocumentos email, NotificadorWhatsApp w, NotificacaoEnvioRepositorio e,
+                                          AuditoriaUseCase a, Clock clock) {
+        return new NotificacaoUseCase(p, ag, f, email, w, e, a, clock);
     }
 }

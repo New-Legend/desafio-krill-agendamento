@@ -33,8 +33,8 @@ public class PaleteFinanceiroUseCase {
                                   int saldoEmAberto, BigDecimal valorEmAberto) {
     }
 
-    public record SaldoLoja(String loja, int pbr, int chep, int chapatex, int descartaveis, int total,
-                            LocalDate ultimoMovimento) {
+    /** porTipo: saldo por código de tipo de palete (pode ser negativo se a loja devolveu mais do que recebeu). */
+    public record SaldoLoja(String loja, Map<String, Integer> porTipo, int total, LocalDate ultimoMovimento) {
     }
 
     public record NovaCobranca(String fornecedor, Integer quantidade, BigDecimal valorUnitario, LocalDate vencimento,
@@ -54,10 +54,18 @@ public class PaleteFinanceiroUseCase {
     private final AuditoriaUseCase auditoria;
     private final Transacao transacao;
     private final Clock clock;
+    private final TipoPaleteUseCase tipos;
 
     public PaleteFinanceiroUseCase(ValePaleteRepositorio vales, CobrancaPaleteRepositorio cobrancas,
                                    MovimentoPaleteRepositorio movimentos, CentroDistribuicaoRepositorio cds,
                                    AuditoriaUseCase auditoria, Transacao transacao, Clock clock) {
+        this(vales, cobrancas, movimentos, cds, auditoria, transacao, clock, null);
+    }
+
+    public PaleteFinanceiroUseCase(ValePaleteRepositorio vales, CobrancaPaleteRepositorio cobrancas,
+                                   MovimentoPaleteRepositorio movimentos, CentroDistribuicaoRepositorio cds,
+                                   AuditoriaUseCase auditoria, Transacao transacao, Clock clock, TipoPaleteUseCase tipos) {
+        this.tipos = tipos;
         this.vales = vales;
         this.cobrancas = cobrancas;
         this.movimentos = movimentos;
@@ -149,6 +157,7 @@ public class PaleteFinanceiroUseCase {
     // ---- Movimentos entre CD e lojas
     public MovimentoPalete registrarMovimento(NovoMovimento cmd, Solicitante s) {
         return transacao.executar(() -> {
+            if (tipos != null && cmd.quantidades() != null) tipos.validarNovo(cmd.quantidades());
             Long cd = cmd.cdId() == null ? 1L : cmd.cdId();
             cds.buscarPorId(cd).orElseThrow(() -> new RecursoNaoEncontradoException("CD", cd));
             LocalDate data = cmd.data() == null ? LocalDate.now(clock) : cmd.data();
@@ -170,10 +179,11 @@ public class PaleteFinanceiroUseCase {
         Map<String, SaldoLoja> mapa = new TreeMap<>();
         for (MovimentoPalete m : movimentos.listar(loja, null, null)) {
             String k = chave(m.loja());
-            SaldoLoja a = mapa.getOrDefault(k, new SaldoLoja(m.loja(), 0, 0, 0, 0, 0, null));
+            SaldoLoja a = mapa.getOrDefault(k, new SaldoLoja(m.loja(), new TreeMap<>(), 0, null));
             LocalDate ultimo = a.ultimoMovimento() == null || m.data().isAfter(a.ultimoMovimento()) ? m.data() : a.ultimoMovimento();
-            mapa.put(k, new SaldoLoja(a.loja(), a.pbr() + m.pbr(), a.chep() + m.chep(), a.chapatex() + m.chapatex(),
-                    a.descartaveis() + m.descartaveis(), a.total() + m.total(), ultimo));
+            Map<String, Integer> porTipo = new TreeMap<>(a.porTipo());
+            m.quantidades().tipos().forEach(t -> porTipo.merge(t, m.de(t), Integer::sum));
+            mapa.put(k, new SaldoLoja(a.loja(), porTipo, a.total() + m.total(), ultimo));
         }
         return List.copyOf(mapa.values());
     }

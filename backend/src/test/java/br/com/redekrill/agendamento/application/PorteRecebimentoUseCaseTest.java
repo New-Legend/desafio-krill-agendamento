@@ -554,11 +554,11 @@ class PorteRecebimentoUseCaseTest {
     @Test
     void contaCorrenteCobrancaReciboEMovimentosDeLoja() {
         ValePalete v1 = new ValePalete(1L, "VP-1", null, HOJE, "Bebidas Vale Ltda", null, null,
-                new ValePalete.Quantidades(20, 5, 0, 0), null, ValePalete.Status.PENDENTE, null, null, null, "admin", AGORA);
-        v1.registrarDevolucao(new ValePalete.Quantidades(5, 0, 0, 0));
+                br.com.redekrill.agendamento.TestePaletes.q(20, 5, 0, 0), null, ValePalete.Status.PENDENTE, null, null, null, "admin", AGORA);
+        v1.registrarDevolucao(br.com.redekrill.agendamento.TestePaletes.q(5, 0, 0, 0));
         vales.salvar(v1);
         ValePalete cancelado = new ValePalete(2L, "VP-2", null, HOJE, "Bebidas Vale Ltda", null, null,
-                new ValePalete.Quantidades(9, 0, 0, 0), null, ValePalete.Status.PENDENTE, null, null, null, "admin", AGORA);
+                br.com.redekrill.agendamento.TestePaletes.q(9, 0, 0, 0), null, ValePalete.Status.PENDENTE, null, null, null, "admin", AGORA);
         cancelado.cancelar();
         vales.salvar(cancelado);
         assertThat(paletes.saldoEmAberto("bebidas vale ltda")).isEqualTo(20);
@@ -584,19 +584,19 @@ class PorteRecebimentoUseCaseTest {
         assertThatThrownBy(() -> paletes.cobrar(new PaleteFinanceiroUseCase.NovaCobranca("Bebidas Vale Ltda", null, BigDecimal.ONE, HOJE, null), ADMIN))
                 .isInstanceOf(RegraNegocioException.class);
 
-        var q = new ValePalete.Quantidades(30, 0, 0, 0);
+        var q = br.com.redekrill.agendamento.TestePaletes.q(30, 0, 0, 0);
         var envio = paletes.registrarMovimento(new PaleteFinanceiroUseCase.NovoMovimento(null, MovimentoPalete.Tipo.ENVIO, null,
                 "Loja 12", q, null), ADMIN);
         assertThat(envio.romaneio()).isEqualTo("RM-20261102-0001");
         assertThat(envio.data()).isEqualTo(HOJE);
         paletes.registrarMovimento(new PaleteFinanceiroUseCase.NovoMovimento(HOJE.plusDays(1), MovimentoPalete.Tipo.RETORNO, 1L,
-                "loja 12", new ValePalete.Quantidades(12, 0, 0, 0), "parcial"), ADMIN);
+                "loja 12", br.com.redekrill.agendamento.TestePaletes.q(12, 0, 0, 0), "parcial"), ADMIN);
         paletes.registrarMovimento(new PaleteFinanceiroUseCase.NovoMovimento(HOJE.minusDays(3), MovimentoPalete.Tipo.SALDO_INICIAL, 1L,
-                "Loja 3", new ValePalete.Quantidades(0, 4, 0, 0), null), ADMIN);
+                "Loja 3", br.com.redekrill.agendamento.TestePaletes.q(0, 4, 0, 0), null), ADMIN);
         var lojas = paletes.saldoPorLoja(null);
         assertThat(lojas).hasSize(2);
         var l12 = lojas.stream().filter(l -> l.loja().equals("Loja 12")).findFirst().orElseThrow();
-        assertThat(l12.pbr()).isEqualTo(18);
+        assertThat(l12.porTipo().get("PBR")).isEqualTo(18);
         assertThat(l12.ultimoMovimento()).isEqualTo(HOJE.plusDays(1));
         assertThat(paletes.listarMovimentos("loja 12", null, null)).hasSize(2);
         assertThatThrownBy(() -> paletes.registrarMovimento(new PaleteFinanceiroUseCase.NovoMovimento(null, MovimentoPalete.Tipo.ENVIO,

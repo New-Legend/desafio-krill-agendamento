@@ -6,6 +6,9 @@ import { isAdmin } from '../sessao'
 import { deIso, fmtData, fmtDataHora, fmtMoeda, hoje, isoData, somarDias } from '../utils'
 import { useEnvio } from '../composables/useEnvio'
 import { useNotificar } from '../composables/useNotificar'
+import { useTiposPalete } from '../composables/useTiposPalete'
+import EmailCobranca from '../components/EmailCobranca.vue'
+import WhatsAppAviso from '../components/WhatsAppAviso.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,11 +26,15 @@ const FORMAS = [
 const STATUS = { ABERTA: ['Aberta', 'warn'], PAGA: ['Paga', 'success'], CANCELADA: ['Cancelada', 'secondary'] }
 const dlg = reactive({ tipo: null, alvo: null, quantidade: null, valorUnitario: 45, vencimento: null, observacao: '', forma: 'PIX', motivo: '' })
 const erro = ref('')
+const tiposPalete = useTiposPalete()
+/** Valor sugerido: reposição do primeiro tipo ativo com valor (PBR na carga inicial). */
+const valorSugerido = computed(() => Number(tiposPalete.ativos.value.find((t) => Number(t.valorReposicao) > 0)?.valorReposicao ?? 45))
 const totalAberto = computed(() => saldos.value.reduce((s, x) => s + x.saldoEmAberto, 0))
 
 async function carregar() {
   try {
     const f = busca.value.trim() || null
+    tiposPalete.carregar().catch(() => {})
     ;[saldos.value, cobrancas.value] = await Promise.all([
       api('/paletes/saldos', { params: { fornecedor: f } }),
       api('/paletes/cobrancas', { params: { fornecedor: f, status: statusCob.value } })
@@ -38,7 +45,7 @@ async function carregar() {
 }
 
 function abrir(tipo, alvo) {
-  Object.assign(dlg, { tipo, alvo, quantidade: alvo?.saldoEmAberto ?? null, valorUnitario: 45, vencimento: deIso(somarDias(hoje(), 10)), observacao: '', forma: 'PIX', motivo: '' })
+  Object.assign(dlg, { tipo, alvo, quantidade: alvo?.saldoEmAberto ?? null, valorUnitario: valorSugerido.value, vencimento: deIso(somarDias(hoje(), 10)), observacao: '', forma: 'PIX', motivo: '' })
   erro.value = ''
 }
 
@@ -112,6 +119,9 @@ defineExpose({ abrir, confirmar, dlg, erro })
       <Column header="Vencimento"><template #body="{ data }"><span :class="data.vencida ? 'erro' : ''">{{ fmtData(data.vencimento) }}</span></template></Column>
       <Column header="Status"><template #body="{ data }"><Tag :value="STATUS[data.status][0]" :severity="STATUS[data.status][1]" /></template></Column>
       <Column header="Recibo"><template #body="{ data }"><a v-if="data.reciboNumero" href="#" @click.prevent="router.push(`/paletes/recibos/${data.id}`)">{{ data.reciboNumero }}</a><span v-else-if="data.pagoEm">{{ fmtDataHora(data.pagoEm) }}</span></template></Column>
+      <Column header="Avisar"><template #body="{ data }">
+        <div v-if="data.status !== 'CANCELADA'" class="botoes-aviso"><EmailCobranca :cobranca-id="data.id" :admin="isAdmin" /><WhatsAppAviso documento="cobrancas" :id="data.id" :admin="isAdmin" /></div>
+      </template></Column>
       <Column v-if="isAdmin" header=""><template #body="{ data }">
         <template v-if="data.status === 'ABERTA'">
           <Button label="Receber" icon="pi pi-check" class="btn-confirmar" size="small" @click="abrir('pagar', data)" />
@@ -143,6 +153,7 @@ defineExpose({ abrir, confirmar, dlg, erro })
 </template>
 
 <style scoped>
+.botoes-aviso { display: flex; gap: 4px; }
 .abas { display: flex; gap: 4px; margin-bottom: 10px; }
 .abas button { border: 1px solid var(--gc-border); background: var(--gc-panel); color: var(--gc-text); padding: 7px 14px; border-radius: var(--raio, 6px); cursor: pointer; font: inherit; }
 .abas button.ativa { background: var(--gc-topbar-bg); color: var(--gc-panel); border-color: transparent; }

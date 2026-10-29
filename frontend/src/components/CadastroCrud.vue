@@ -20,6 +20,7 @@ const props = defineProps({
   params: { type: Object, default: null }
 })
 
+const emit = defineEmits(['salvo'])
 const notificar = useNotificar()
 const { enviando, enviar } = useEnvio()
 const lista = ref([])
@@ -68,6 +69,7 @@ function salvar() {
       await api(form.id ? `${props.recurso}/${form.id}` : props.recurso, { method: form.id ? 'PUT' : 'POST', body })
       notificar.sucesso(form.id ? 'Registro atualizado' : 'Registro incluído')
       visivel.value = false
+      emit('salvo')
       carregar()
     } catch (e) {
       notificar.erro(e)
@@ -106,7 +108,7 @@ defineExpose({ carregar })
       <div v-for="c in campos" :key="c.campo" class="campo" :class="c.tipo === 'texto' ? 'c12' : 'c6'">
         <label :for="c.campo">{{ c.rotulo }} <span v-if="c.obrigatorio" class="obrig">*</span></label>
         <InputText v-if="c.tipo === 'texto'" :id="c.campo" v-model="form[c.campo]" :maxlength="c.max" :invalid="!!erros[c.campo]" />
-        <InputNumber v-else-if="c.tipo === 'numero'" v-model="form[c.campo]" :input-id="c.campo" :min="c.min ?? 0" :max="c.maxNum" :invalid="!!erros[c.campo]" />
+        <InputNumber v-else-if="c.tipo === 'numero'" v-model="form[c.campo]" :input-id="c.campo" :min="c.min ?? 0" :max="c.maxNum" :max-fraction-digits="c.decimais ?? 0" :invalid="!!erros[c.campo]" />
         <InputText v-else-if="c.tipo === 'hora'" :id="c.campo" v-model="form[c.campo]" type="time" step="900" :invalid="!!erros[c.campo]" />
         <Select v-else-if="c.tipo === 'select'" v-model="form[c.campo]" :input-id="c.campo" :options="c.opcoes" option-label="label" option-value="value" :invalid="!!erros[c.campo]" show-clear />
         <ToggleSwitch v-else-if="c.tipo === 'ativo'" v-model="form[c.campo]" :input-id="c.campo" />

@@ -10,6 +10,7 @@ import StatusAgendamento from '../components/StatusAgendamento.vue'
 import EscolhaHorario from '../components/EscolhaHorario.vue'
 import NotasFiscais from '../components/NotasFiscais.vue'
 import SeletorCd from '../components/SeletorCd.vue'
+import WhatsAppAviso from '../components/WhatsAppAviso.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -55,6 +56,7 @@ function confirmarRemarcacao() {
 }
 const op = reactive({ placa: '', motorista: '', conferente: '', paletesRecebidos: null, divergencia: '' })
 const link = ref('')
+const conferentes = ref([])
 const podeCancelar = computed(() => ['AGENDADO', 'CONFIRMADO'].includes(detalhe.value?.status))
 const acoes = computed(() => {
   const s = detalhe.value?.status
@@ -74,6 +76,12 @@ function prepararAcao(k) {
   op.conferente = detalhe.value.conferente || ''
   op.paletesRecebidos = detalhe.value.quantidadePaletes
   op.divergencia = ''
+  if (k === 'INICIAR') {
+    conferentes.value = []
+    api('/conferentes', { params: { cdId: detalhe.value.cdId || 1, ativos: true } })
+      .then((l) => (conferentes.value = (l || []).map((c) => c.nome)))
+      .catch(() => {})
+  }
 }
 
 function executarAcao() {
@@ -261,7 +269,10 @@ onMounted(() => {
             <div class="campo c4"><label for="op-placa">Placa <span class="obrig">*</span></label><InputText id="op-placa" v-model="op.placa" maxlength="8" autofocus /></div>
             <div class="campo c8"><label for="op-mot">Motorista</label><InputText id="op-mot" v-model="op.motorista" maxlength="80" /></div>
           </template>
-          <div v-if="acao === 'INICIAR'" class="campo c12"><label for="op-conf">Conferente <span class="obrig">*</span></label><InputText id="op-conf" v-model="op.conferente" maxlength="80" autofocus /></div>
+          <div v-if="acao === 'INICIAR'" class="campo c12"><label for="op-conf">Conferente <span class="obrig">*</span></label>
+            <Select v-if="conferentes.length" v-model="op.conferente" input-id="op-conf" :options="conferentes" placeholder="Selecione o conferente" filter />
+            <InputText v-else id="op-conf" v-model="op.conferente" maxlength="80" autofocus />
+          </div>
           <template v-if="acao === 'CONCLUIR'">
             <div class="campo c4"><label for="op-pal">Paletes recebidos <span class="obrig">*</span></label><InputNumber v-model="op.paletesRecebidos" input-id="op-pal" :min="0" :max="10000" /></div>
             <div class="campo c8"><label for="op-div">Divergência</label><InputText id="op-div" v-model="op.divergencia" maxlength="255" /><small class="texto-suave">Se a contagem diferir do agendado, a divergência é registrada automaticamente.</small></div>
@@ -284,6 +295,7 @@ onMounted(() => {
         <Button v-for="a in acoes" :key="a.k" :label="a.label" :icon="a.icon" :class="a.excluir ? 'btn-excluir' : 'btn-confirmar'" @click="prepararAcao(a.k)" />
         <Button v-if="podeRemarcar" label="Remarcar" icon="pi pi-calendar" class="btn-secundario" @click="abrirRemarcar" />
         <Button v-if="['AGENDADO', 'CONFIRMADO'].includes(detalhe.status)" label="Link do fornecedor" icon="pi pi-link" class="btn-secundario" :disabled="enviando" @click="gerarLink" />
+        <WhatsAppAviso v-if="['AGENDADO', 'CONFIRMADO'].includes(detalhe.status)" documento="agendamentos" :id="detalhe.id" :admin="isAdmin" />
         <Button v-if="['CHEGOU', 'EM_RECEBIMENTO', 'RECEBIDO'].includes(detalhe.status)" label="Emitir vale-palete" icon="pi pi-ticket" class="btn-secundario" @click="router.push({ path: '/vales-palete/novo', query: { agendamento: detalhe.id } })" />
       </template>
       <template v-if="detalhe && isAdmin && podeCancelar && !acao && !remarcando">

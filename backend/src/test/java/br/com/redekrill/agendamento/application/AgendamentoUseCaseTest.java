@@ -446,20 +446,20 @@ class AgendamentoUseCaseTest {
         ValePaleteUseCase uc = new ValePaleteUseCase(repo, agendamentos, new AuditoriaUseCase(auditoriaRepo, CLOCK), tx, CLOCK);
         Long agId = useCase.criar(cmd(1, 1, 10), ADMIN).agendamento().agendamento().getId();
         ValePalete v = uc.emitir(new ValePaleteUseCase.NovoVale(agId, null, null, null, null,
-                new ValePalete.Quantidades(10, 2, 0, 0), "obs"), ADMIN);
+                br.com.redekrill.agendamento.TestePaletes.q(10, 2, 0, 0), "obs"), ADMIN);
         assertThat(v.getCodigo()).isEqualTo("VP-20261102-0001");
         assertThat(v.getFornecedor()).isEqualTo("Fornecedor Alfa");
         ValePalete v2 = uc.emitir(new ValePaleteUseCase.NovoVale(null, DIA, "Outro", "BRA2E19", "Zé",
-                new ValePalete.Quantidades(1, 0, 0, 0), null), ADMIN);
+                br.com.redekrill.agendamento.TestePaletes.q(1, 0, 0, 0), null), ADMIN);
         assertThat(v2.getPlaca()).isEqualTo("BRA2E19");
         assertThatThrownBy(() -> uc.emitir(new ValePaleteUseCase.NovoVale(99L, null, null, null, null,
-                new ValePalete.Quantidades(1, 0, 0, 0), null), ADMIN)).isInstanceOf(RecursoNaoEncontradoException.class);
+                br.com.redekrill.agendamento.TestePaletes.q(1, 0, 0, 0), null), ADMIN)).isInstanceOf(RecursoNaoEncontradoException.class);
         String png = "data:image/png;base64,AAAA";
         uc.assinar(v.getId(), ValePalete.Assinante.MOTORISTA, "João", png, ADMIN);
         assertThat(uc.assinar(v.getId(), ValePalete.Assinante.CONFERENTE, "Carlos", png, ADMIN).getStatus()).isEqualTo(ValePalete.Status.ASSINADO);
         assertThat(uc.refazerAssinatura(v.getId(), ValePalete.Assinante.CONFERENTE, ADMIN).getStatus()).isEqualTo(ValePalete.Status.PENDENTE);
-        assertThat(uc.registrarDevolucao(v.getId(), new ValePalete.Quantidades(5, 0, 0, 0), ADMIN).saldo().total()).isEqualTo(7);
-        assertThat(uc.registrarDevolucao(v.getId(), new ValePalete.Quantidades(5, 2, 0, 0), ADMIN).getStatus()).isEqualTo(ValePalete.Status.QUITADO);
+        assertThat(uc.registrarDevolucao(v.getId(), br.com.redekrill.agendamento.TestePaletes.q(5, 0, 0, 0), ADMIN).saldo().total()).isEqualTo(7);
+        assertThat(uc.registrarDevolucao(v.getId(), br.com.redekrill.agendamento.TestePaletes.q(5, 2, 0, 0), ADMIN).getStatus()).isEqualTo(ValePalete.Status.QUITADO);
         assertThat(uc.cancelar(v2.getId(), ADMIN).getStatus()).isEqualTo(ValePalete.Status.CANCELADO);
         assertThat(uc.buscarPorCodigo(" vp-20261102-0001 ").getId()).isEqualTo(v.getId());
         assertThatThrownBy(() -> uc.buscarPorCodigo(null)).isInstanceOf(RecursoNaoEncontradoException.class);

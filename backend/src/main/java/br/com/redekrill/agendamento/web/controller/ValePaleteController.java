@@ -61,7 +61,7 @@ public class ValePaleteController {
     @PreAuthorize("hasRole('ADMIN')")
     public ValePaleteResp emitir(@Valid @RequestBody Requisicoes.NovoVale b, HttpServletRequest req) {
         return ValePaleteResp.de(useCase.emitir(new ValePaleteUseCase.NovoVale(b.agendamentoId(), b.data(), b.fornecedor(),
-                b.placa(), b.motorista(), new ValePalete.Quantidades(b.pbr(), b.chep(), b.chapatex(), b.descartaveis()),
+                b.placa(), b.motorista(), new ValePalete.Quantidades(b.quantidades()),
                 b.observacao()), Requisicao.solicitante(req)));
     }
 
@@ -85,7 +85,7 @@ public class ValePaleteController {
     @Operation(summary = "Registra devolução de paletes (total quita o vale)")
     public ValePaleteResp devolver(@PathVariable Long id, @Valid @RequestBody Requisicoes.Devolucao b, HttpServletRequest req) {
         return ValePaleteResp.de(useCase.registrarDevolucao(id,
-                new ValePalete.Quantidades(b.pbr(), b.chep(), b.chapatex(), b.descartaveis()), Requisicao.solicitante(req)));
+                new ValePalete.Quantidades(b.quantidades()), Requisicao.solicitante(req)));
     }
 
     @PatchMapping("/{id}/cancelamento")

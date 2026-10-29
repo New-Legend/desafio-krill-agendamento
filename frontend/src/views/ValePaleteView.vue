@@ -7,30 +7,41 @@ import { deIso, fmtData, fmtDataHora, hoje, isoData } from '../utils'
 import { useEnvio } from '../composables/useEnvio'
 import { useNotificar } from '../composables/useNotificar'
 import AssinaturaPad from '../components/AssinaturaPad.vue'
+import { somar, useTiposPalete, zerar } from '../composables/useTiposPalete'
 
 const route = useRoute()
 const router = useRouter()
 const notificar = useNotificar()
 const { enviando, enviar } = useEnvio()
-const TIPOS = [['pbr', 'PBR'], ['chep', 'CHEP'], ['chapatex', 'Chapatex'], ['descartaveis', 'Descartáveis']]
+const tiposPalete = useTiposPalete()
 const STATUS = { PENDENTE: ['Pendente de assinatura', 'warn'], ASSINADO: ['Assinado', 'info'], QUITADO: ['Quitado', 'success'], CANCELADO: ['Cancelado', 'danger'] }
 
 const novo = computed(() => route.name === 'vale-novo')
 const vale = ref(null)
-const form = reactive({ agendamentoId: null, data: deIso(hoje()), fornecedor: '', placa: '', motorista: '', pbr: 0, chep: 0, chapatex: 0, descartaveis: 0, observacao: '' })
-const dev = reactive({ pbr: 0, chep: 0, chapatex: 0, descartaveis: 0 })
+const form = reactive({ agendamentoId: null, data: deIso(hoje()), fornecedor: '', placa: '', motorista: '', quantidades: {}, observacao: '' })
+const dev = ref({})
 const assinando = ref(null)
 const nomeAss = ref('')
 const pad = ref(null)
-const total = (q) => (q ? q.pbr + q.chep + q.chapatex + q.descartaveis : 0)
+const total = somar
+const tiposNovo = computed(() => tiposPalete.ativos.value)
+const tiposVale = computed(() => (vale.value ? Object.keys(vale.value.entregues) : []))
 
 async function carregar() {
+  try {
+    await tiposPalete.carregar()
+  } catch (e) {
+    notificar.erro(e)
+  }
   if (novo.value) {
     vale.value = null
+    form.quantidades = zerar(tiposNovo.value.map((t) => t.codigo))
     if (route.query.agendamento) {
       try {
         const a = await api(`/agendamentos/${route.query.agendamento}`)
-        Object.assign(form, { agendamentoId: a.id, data: deIso(a.data), fornecedor: a.fornecedor, placa: a.placa || '', motorista: a.motorista || '', pbr: a.paletesRecebidos ?? a.quantidadePaletes })
+        Object.assign(form, { agendamentoId: a.id, data: deIso(a.data), fornecedor: a.fornecedor, placa: a.placa || '', motorista: a.motorista || '' })
+        const primeiro = tiposNovo.value[0]?.codigo
+        if (primeiro) form.quantidades[primeiro] = a.paletesRecebidos ?? a.quantidadePaletes
       } catch (e) {
         notificar.erro(e)
       }
@@ -39,6 +50,7 @@ async function carregar() {
   }
   try {
     vale.value = await api(`/vales-palete/${route.params.id}`)
+    dev.value = zerar(tiposVale.value)
   } catch (e) {
     notificar.erro(e)
     router.replace('/vales-palete')
@@ -47,7 +59,7 @@ async function carregar() {
 
 function criar() {
   if (!form.fornecedor.trim()) return notificar.aviso('Informe o fornecedor')
-  if (TIPOS.every(([k]) => !form[k])) return notificar.aviso('Informe ao menos um palete entregue')
+  if (!somar(form.quantidades)) return notificar.aviso('Informe ao menos um palete entregue')
   enviar(async () => {
     try {
       const v = await api('/vales-palete', { method: 'POST', body: { ...form, data: isoData(form.data), fornecedor: form.fornecedor.trim(), placa: form.placa.trim() || null, motorista: form.motorista.trim() || null, observacao: form.observacao.trim() || null } })
@@ -93,8 +105,8 @@ function refazer(quem) {
 function devolver() {
   enviar(async () => {
     try {
-      vale.value = await api(`/vales-palete/${vale.value.id}/devolucoes`, { method: 'POST', body: { ...dev } })
-      Object.assign(dev, { pbr: 0, chep: 0, chapatex: 0, descartaveis: 0 })
+      vale.value = await api(`/vales-palete/${vale.value.id}/devolucoes`, { method: 'POST', body: { quantidades: dev.value } })
+      dev.value = zerar(tiposVale.value)
       notificar.sucesso(vale.value.status === 'QUITADO' ? 'Vale quitado' : 'Devolução registrada')
     } catch (e) {
       notificar.erro(e)
@@ -130,7 +142,7 @@ onMounted(carregar)
         <div class="campo c9"><label for="vfo">Fornecedor / transportadora <span class="obrig">*</span></label><InputText id="vfo" v-model="form.fornecedor" maxlength="80" /></div>
         <div class="campo c3"><label for="vpl">Placa</label><InputText id="vpl" v-model="form.placa" maxlength="8" /></div>
         <div class="campo c9"><label for="vmo">Motorista</label><InputText id="vmo" v-model="form.motorista" maxlength="80" /></div>
-        <div v-for="[k, rotulo] in TIPOS" :key="k" class="campo c3"><label :for="`q-${k}`">{{ rotulo }}</label><InputNumber v-model="form[k]" :input-id="`q-${k}`" :min="0" :max="1000" /></div>
+        <div v-for="t in tiposNovo" :key="t.codigo" class="campo c3"><label :for="`q-${t.codigo}`">{{ t.nome }}</label><InputNumber v-model="form.quantidades[t.codigo]" :input-id="`q-${t.codigo}`" :min="0" :max="1000" /></div>
         <div class="campo c12"><label for="vob">Observação</label><Textarea id="vob" v-model="form.observacao" rows="2" maxlength="500" /></div>
       </div>
       <div class="rodape-form">
@@ -164,7 +176,7 @@ onMounted(carregar)
       <table class="tabela-vale">
         <thead><tr><th>Tipo</th><th>Entregues</th><th>Devolvidos</th><th>Saldo a devolver</th></tr></thead>
         <tbody>
-          <tr v-for="[k, rotulo] in TIPOS" :key="k"><td>{{ rotulo }}</td><td>{{ vale.entregues[k] }}</td><td>{{ vale.devolvidos[k] }}</td><td><b>{{ vale.saldo[k] }}</b></td></tr>
+          <tr v-for="k in tiposVale" :key="k"><td>{{ tiposPalete.rotulo(k) }}</td><td>{{ vale.entregues[k] || 0 }}</td><td>{{ vale.devolvidos[k] || 0 }}</td><td><b>{{ vale.saldo[k] || 0 }}</b></td></tr>
         </tbody>
         <tfoot><tr><td>Total</td><td>{{ total(vale.entregues) }}</td><td>{{ total(vale.devolvidos) }}</td><td><b>{{ total(vale.saldo) }}</b></td></tr></tfoot>
       </table>
@@ -186,7 +198,7 @@ onMounted(carregar)
     <section v-if="isAdmin && ['PENDENTE', 'ASSINADO'].includes(vale.status)" class="painel nao-imprimir">
       <h2>Registrar devolução</h2>
       <form class="form-grade" @submit.prevent="devolver">
-        <div v-for="[k, rotulo] in TIPOS" :key="k" class="campo c2"><label :for="`d-${k}`">{{ rotulo }}</label><InputNumber v-model="dev[k]" :input-id="`d-${k}`" :min="0" :max="vale.saldo[k]" /></div>
+        <div v-for="k in tiposVale" :key="k" class="campo c2"><label :for="`d-${k}`">{{ tiposPalete.rotulo(k) }}</label><InputNumber v-model="dev[k]" :input-id="`d-${k}`" :min="0" :max="vale.saldo[k] || 0" /></div>
         <div class="campo c4 alinhar-fim"><Button type="submit" label="Registrar devolução" icon="pi pi-check" class="btn-confirmar" :loading="enviando" :disabled="enviando" /></div>
       </form>
       <div class="rodape-form"><Button label="Cancelar vale" icon="pi pi-times" class="btn-excluir" :disabled="enviando" @click="cancelar" /></div>
