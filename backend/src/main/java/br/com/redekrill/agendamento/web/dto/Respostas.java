@@ -39,7 +39,12 @@ public final class Respostas {
         }
     }
 
-    public record CriacaoResp(AgendamentoResp agendamento, List<AlertaCapacidade> alertas, String linkFornecedor) {
+    public record CriacaoResp(AgendamentoResp agendamento, List<AlertaCapacidade> alertas, String linkFornecedor,
+                              List<String> alertasDestino) {
+        public CriacaoResp(AgendamentoResp agendamento, List<AlertaCapacidade> alertas, String linkFornecedor) {
+            this(agendamento, alertas, linkFornecedor, List.of());
+        }
+
     }
 
     public record OcupacaoFaixaResp(Long faixaHorariaId, String descricao, LocalTime horaInicio, LocalTime horaFim,
@@ -99,5 +104,15 @@ public final class Respostas {
     }
 
     public record Erro(int status, String mensagem, List<String> detalhes, OffsetDateTime dataHora) {
+    }
+
+    /** Ocupação do dia de um CD ou loja frente à capacidade diária cadastrada. */
+    public record OcupacaoRecebimentoResp(java.time.LocalDate data, String destino, Integer capacidadePaletes, int paletes,
+                                          Integer capacidadeCaminhoes, int caminhoes, double percentualPaletes,
+                                          double percentualCaminhoes, double percentual, boolean limitado, boolean cheio) {
+        public static OcupacaoRecebimentoResp de(br.com.redekrill.agendamento.domain.model.OcupacaoRecebimento o) {
+            return new OcupacaoRecebimentoResp(o.data(), o.destino(), o.capacidadePaletes(), o.paletes(), o.capacidadeCaminhoes(),
+                    o.caminhoes(), o.percentualPaletes(), o.percentualCaminhoes(), o.percentual(), o.limitado(), o.cheio());
+        }
     }
 }

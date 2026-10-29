@@ -12,7 +12,8 @@ import java.util.Optional;
 @Component
 public class TipoPaleteRepositorioJdbc implements TipoPaleteRepositorio {
     private static final RowMapper<TipoPalete> MAP = (r, i) -> new TipoPalete(r.getLong("id"), r.getString("codigo"),
-            r.getString("nome"), r.getBigDecimal("valor_reposicao"), r.getInt("ordem"), r.getBoolean("ativo"));
+            r.getString("nome"), r.getBigDecimal("valor_reposicao"), r.getInt("ordem"), r.getBoolean("ativo"),
+            r.getObject("cd_id", Long.class));
     private final JdbcClient db;
 
     public TipoPaleteRepositorioJdbc(JdbcClient db) {
@@ -45,10 +46,10 @@ public class TipoPaleteRepositorioJdbc implements TipoPaleteRepositorio {
     @Override
     public TipoPalete salvar(TipoPalete t) {
         Long id = t.id() == null
-                ? db.sql("insert into tipo_palete (codigo, nome, valor_reposicao, ordem, ativo) values (?, ?, ?, ?, ?) returning id")
-                .params(t.codigo(), t.nome(), t.valorReposicao(), t.ordem(), t.ativo()).query(Long.class).single()
-                : db.sql("update tipo_palete set nome = ?, valor_reposicao = ?, ordem = ?, ativo = ? where id = ? returning id")
-                .params(t.nome(), t.valorReposicao(), t.ordem(), t.ativo(), t.id()).query(Long.class).single();
+                ? db.sql("insert into tipo_palete (codigo, nome, valor_reposicao, ordem, ativo, cd_id) values (?, ?, ?, ?, ?, ?) returning id")
+                .params(t.codigo(), t.nome(), t.valorReposicao(), t.ordem(), t.ativo(), t.cdId()).query(Long.class).single()
+                : db.sql("update tipo_palete set nome = ?, valor_reposicao = ?, ordem = ?, ativo = ?, cd_id = ? where id = ? returning id")
+                .params(t.nome(), t.valorReposicao(), t.ordem(), t.ativo(), t.cdId(), t.id()).query(Long.class).single();
         return buscarPorId(id).orElseThrow();
     }
 

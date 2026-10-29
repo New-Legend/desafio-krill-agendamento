@@ -17,7 +17,10 @@ import java.util.stream.Collectors;
 /** Cadastro dos tipos de palete (vale-palete → configurações). */
 public class TipoPaleteUseCase {
 
-    public record Dados(String codigo, String nome, BigDecimal valorReposicao, Integer ordem, Boolean ativo) {
+    public record Dados(String codigo, String nome, BigDecimal valorReposicao, Integer ordem, Boolean ativo, Long cdId) {
+        public Dados(String codigo, String nome, BigDecimal valorReposicao, Integer ordem, Boolean ativo) {
+            this(codigo, nome, valorReposicao, ordem, ativo, null);
+        }
     }
 
     private final TipoPaleteRepositorio repo;
@@ -31,12 +34,17 @@ public class TipoPaleteUseCase {
     }
 
     public List<TipoPalete> listar(boolean somenteAtivos) {
-        return repo.listar().stream().filter(t -> !somenteAtivos || t.ativo()).toList();
+        return listar(somenteAtivos, null);
+    }
+
+    /** cdId informado: só os tipos de todos os CDs e os exclusivos daquele CD. */
+    public List<TipoPalete> listar(boolean somenteAtivos, Long cdId) {
+        return repo.listar().stream().filter(t -> !somenteAtivos || t.ativo()).filter(t -> t.valeParaCd(cdId)).toList();
     }
 
     public TipoPalete criar(Dados d, Solicitante s) {
         return transacao.executar(() -> {
-            TipoPalete t = new TipoPalete(null, d.codigo(), d.nome(), d.valorReposicao(), ordem(d), d.ativo() == null || d.ativo());
+            TipoPalete t = new TipoPalete(null, d.codigo(), d.nome(), d.valorReposicao(), ordem(d), d.ativo() == null || d.ativo(), d.cdId());
             if (repo.existeCodigo(t.codigo(), null)) throw new RegraNegocioException("Já existe um tipo de palete com o código " + t.codigo());
             TipoPalete salvo = repo.salvar(t);
             auditoria.registrar(s, "CRIAR", "TIPO_PALETE", salvo.id(), Map.of("codigo", salvo.codigo(), "nome", salvo.nome()));
@@ -56,7 +64,7 @@ public class TipoPaleteUseCase {
                 throw new RegraNegocioException("Mantenha ao menos um tipo de palete ativo");
             }
             TipoPalete salvo = repo.salvar(new TipoPalete(id, atual.codigo(), d.nome(), d.valorReposicao(),
-                    d.ordem() == null ? atual.ordem() : d.ordem(), ativo));
+                    d.ordem() == null ? atual.ordem() : d.ordem(), ativo, d.cdId()));
             auditoria.registrar(s, "ALTERAR", "TIPO_PALETE", id, Map.of("codigo", salvo.codigo(), "nome", salvo.nome(),
                     "ativo", salvo.ativo()));
             return salvo;

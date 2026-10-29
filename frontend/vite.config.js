@@ -52,7 +52,8 @@ export default defineConfig({
         'src/views/TiposCaminhaoView.vue', 'src/views/TiposPaletizacaoView.vue', 'src/views/FaixasView.vue',
         'src/views/ParametrosDescargaView.vue', 'src/views/FornecedorPublicoView.vue', 'src/views/DivergenciasView.vue',
         'src/views/DescargaView.vue', 'src/views/RotinaView.vue', 'src/views/ContaCorrenteView.vue',
-        'src/views/ReciboPaleteView.vue', 'src/views/MovimentosPaleteView.vue'
+        'src/views/ReciboPaleteView.vue', 'src/views/MovimentosPaleteView.vue', 'src/views/PatioView.vue',
+        'src/views/CapacidadeRecebimentoView.vue', 'src/views/TiposPaleteView.vue'
       ],
       exclude: ['src/components/AssinaturaPad.vue'],
       // Funções ficam de fora do corte: o v8 conta cada arrow inline dos templates e cada import() lazy de rota como função.

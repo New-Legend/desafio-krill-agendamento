@@ -17,6 +17,7 @@ const { enviando, enviar } = useEnvio()
 const aba = ref(route.path.endsWith('cobrancas') ? 'cobrancas' : 'saldos')
 const busca = ref('')
 const saldos = ref([])
+const porTransportadora = ref([])
 const cobrancas = ref([])
 const statusCob = ref('ABERTA')
 const FORMAS = [
@@ -35,14 +36,25 @@ async function carregar() {
   try {
     const f = busca.value.trim() || null
     tiposPalete.carregar().catch(() => {})
-    ;[saldos.value, cobrancas.value] = await Promise.all([
+    ;[saldos.value, cobrancas.value, porTransportadora.value] = await Promise.all([
       api('/paletes/saldos', { params: { fornecedor: f } }),
-      api('/paletes/cobrancas', { params: { fornecedor: f, status: statusCob.value } })
+      api('/paletes/cobrancas', { params: { fornecedor: f, status: statusCob.value } }),
+      api('/paletes/saldos-transportadora').catch(() => [])
     ])
   } catch (e) {
     notificar.erro(e)
   }
 }
+
+/** Agrupamento padrão vem da configuração do vale-palete (fornecedor ou transportadora), como no Gestão CD. */
+onMounted(async () => {
+  try {
+    const cfg = await api('/vales-palete/configuracao')
+    if (cfg.agrupamento === 'transportadora' && aba.value === 'saldos') aba.value = 'transportadoras'
+  } catch {
+    /* mantém fornecedor */
+  }
+})
 
 function abrir(tipo, alvo) {
   Object.assign(dlg, { tipo, alvo, quantidade: alvo?.saldoEmAberto ?? null, valorUnitario: valorSugerido.value, vencimento: deIso(somarDias(hoje(), 10)), observacao: '', forma: 'PIX', motivo: '' })
@@ -86,6 +98,7 @@ defineExpose({ abrir, confirmar, dlg, erro })
   </div>
   <div class="abas">
     <button :class="{ ativa: aba === 'saldos' }" @click="aba = 'saldos'">Saldo por fornecedor</button>
+    <button :class="{ ativa: aba === 'transportadoras' }" @click="aba = 'transportadoras'">Por transportadora</button>
     <button :class="{ ativa: aba === 'cobrancas' }" @click="aba = 'cobrancas'">Cobranças e recibos</button>
   </div>
 
@@ -102,6 +115,18 @@ defineExpose({ abrir, confirmar, dlg, erro })
       <Column header="Saldo em aberto" class="num" sortable sort-field="saldoEmAberto"><template #body="{ data }"><strong :class="data.saldoEmAberto > 0 ? 'erro' : ''">{{ data.saldoEmAberto }}</strong></template></Column>
       <Column header="A receber" class="num"><template #body="{ data }">{{ fmtMoeda(data.valorEmAberto) }}</template></Column>
       <Column v-if="isAdmin" header=""><template #body="{ data }"><Button v-if="data.saldoEmAberto > 0" label="Cobrar" icon="pi pi-wallet" class="btn-confirmar" size="small" @click="abrir('cobrar', data)" /></template></Column>
+    </DataTable>
+  </section>
+
+  <section v-else-if="aba === 'transportadoras'" class="painel">
+    <div class="painel-titulo"><h2>Vales agrupados por transportadora</h2><span class="texto-suave">Sem transportadora no agendamento, entra o fornecedor</span></div>
+    <DataTable :value="porTransportadora" size="small" striped-rows>
+      <template #empty><div class="vazio">Nenhum vale-palete emitido</div></template>
+      <Column field="transportadora" header="Transportadora / fornecedor" sortable />
+      <Column field="vales" header="Vales" class="num" />
+      <Column field="entregues" header="Entregues" class="num" />
+      <Column field="devolvidos" header="Devolvidos" class="num" />
+      <Column header="Saldo" class="num" sortable sort-field="saldo"><template #body="{ data }"><strong :class="data.saldo > 0 ? 'erro' : ''">{{ data.saldo }}</strong></template></Column>
     </DataTable>
   </section>
 

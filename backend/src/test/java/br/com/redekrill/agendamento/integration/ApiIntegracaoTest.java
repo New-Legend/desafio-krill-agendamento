@@ -414,4 +414,74 @@ class ApiIntegracaoTest {
         mvc.perform(put("/api/v1/conferentes/" + conf).header("Authorization", admin).contentType(json_)
                 .content("{\"cdId\":1,\"nome\":\"Carlos Lima\",\"ativo\":false}")).andExpect(jsonPath("$.ativo").value(false));
     }
+
+    @Test
+    void patioDocasCapacidadeTaxasEAvulsos() throws Exception {
+        String admin = token("admin", "admin123");
+        String usuario = token("usuario", "usuario123");
+        MediaType j = MediaType.APPLICATION_JSON;
+        LocalDate d = dia.plusDays(3);
+
+        // capacidade por loja + agendamento com entrega direta
+        mvc.perform(post("/api/v1/capacidades-recebimento").header("Authorization", usuario).contentType(j)
+                .content("{\"loja\":\"Loja 12\",\"paletes\":5}")).andExpect(status().isForbidden());
+        mvc.perform(post("/api/v1/capacidades-recebimento").header("Authorization", admin).contentType(j)
+                .content("{\"loja\":\"Loja 12\",\"paletes\":5,\"caminhoes\":1}")).andExpect(status().isCreated());
+        String body = agendamento(2, 1, 6).replace(dia.toString(), d.toString())
+                .replace("\"observacao\"", "\"loja\":\"Loja 12\",\"transportadora\":\"Transportes Sul\",\"observacao\"");
+        String criado = mvc.perform(post("/api/v1/agendamentos").header("Authorization", admin).contentType(j).content(body))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.alertasDestino.length()").value(1))
+                .andReturn().getResponse().getContentAsString();
+        long id = json.readTree(criado).at("/agendamento/id").asLong();
+        mvc.perform(get("/api/v1/capacidades-recebimento/ocupacao").param("data", d.toString()).param("loja", "loja 12")
+                        .header("Authorization", usuario))
+                .andExpect(jsonPath("$.paletes").value(6)).andExpect(jsonPath("$.caminhoes").value(1)).andExpect(jsonPath("$.cheio").value(true));
+        mvc.perform(get("/api/v1/capacidades-recebimento/ocupacao").param("data", d.toString()).header("Authorization", usuario))
+                .andExpect(jsonPath("$.capacidadePaletes").value(480)).andExpect(jsonPath("$.paletes").value(0));
+
+        // docas e pátio
+        String doca = mvc.perform(post("/api/v1/docas").header("Authorization", admin).contentType(j)
+                .content("{\"cdId\":1,\"codigo\":\"d90\",\"nome\":\"Doca 90\"}")).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.codigo").value("D90")).andReturn().getResponse().getContentAsString();
+        long docaId = json.readTree(doca).get("id").asLong();
+        mvc.perform(put("/api/v1/agendamentos/" + id + "/doca").header("Authorization", admin).contentType(j)
+                .content("{\"docaId\":" + docaId + "}")).andExpect(status().isUnprocessableEntity());
+        mvc.perform(patch("/api/v1/agendamentos/" + id + "/status").header("Authorization", admin).contentType(j)
+                .content("{\"acao\":\"CHEGADA\",\"placa\":\"QWE1R23\"}")).andExpect(jsonPath("$.status").value("CHEGOU"));
+        mvc.perform(put("/api/v1/agendamentos/" + id + "/doca").header("Authorization", admin).contentType(j)
+                .content("{\"docaId\":" + docaId + "}")).andExpect(jsonPath("$.docaId").value(docaId));
+        mvc.perform(get("/api/v1/patio").param("data", d.toString()).param("cdId", "1").header("Authorization", usuario))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.colunas.NA_DOCA[0].placa").value("QWE1R23"))
+                .andExpect(jsonPath("$.colunas.NA_DOCA[0].transportadora").value("Transportes Sul"))
+                .andExpect(jsonPath("$.colunas.NA_DOCA[0].modal").value("Sider / carreta"))
+                .andExpect(jsonPath("$.colunas.NA_DOCA[0].taxaDescarga").value(150.0))
+                .andExpect(jsonPath("$.indicador.docasAtivas").value(5));
+
+        // taxa por modal
+        mvc.perform(get("/api/v1/taxas-descarga").header("Authorization", usuario)).andExpect(jsonPath("$.length()").value(3));
+        mvc.perform(get("/api/v1/taxas-descarga/calculo").param("tipoCaminhao", "Baú").param("paletes", "4").header("Authorization", usuario))
+                .andExpect(jsonPath("$.valor").value(120.0));
+
+        // produto avulso e catálogo CSV
+        mvc.perform(post("/api/v1/agendamentos/" + id + "/itens-avulsos").header("Authorization", admin).contentType(j)
+                .content("{\"codigo\":\"BRINDE-01\",\"descricao\":\"Display brinde\",\"quantidade\":2,\"unidade\":\"UN\",\"cadastrarProduto\":true}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.produtoId").isNumber());
+        mvc.perform(get("/api/v1/agendamentos/" + id + "/itens-avulsos").header("Authorization", usuario)).andExpect(jsonPath("$.length()").value(1));
+        mvc.perform(get("/api/v1/produtos/exportar.csv").header("Authorization", usuario)).andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("BRINDE-01;;Display brinde;UN")));
+
+        // vale-palete: configuração e agrupamento por transportadora
+        mvc.perform(get("/api/v1/vales-palete/configuracao").header("Authorization", usuario))
+                .andExpect(jsonPath("$.exigirDuasAssinaturas").value(false)).andExpect(jsonPath("$.agrupamento").value("fornecedor"));
+        mvc.perform(put("/api/v1/vales-palete/configuracao").header("Authorization", admin).contentType(j)
+                .content("{\"exigirDuasAssinaturas\":false,\"agrupamento\":\"transportadora\"}")).andExpect(jsonPath("$.agrupamento").value("transportadora"));
+        mvc.perform(post("/api/v1/vales-palete").header("Authorization", admin).contentType(j)
+                .content("{\"agendamentoId\":" + id + ",\"quantidades\":{\"PBR\":4}}")).andExpect(status().isCreated());
+        mvc.perform(get("/api/v1/paletes/saldos-transportadora").header("Authorization", usuario))
+                .andExpect(jsonPath("$[?(@.transportadora == 'Transportes Sul')].saldo").value(4));
+        mvc.perform(put("/api/v1/vales-palete/configuracao").header("Authorization", admin).contentType(j)
+                .content("{\"exigirDuasAssinaturas\":false,\"agrupamento\":\"fornecedor\"}")).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/tipos-palete").param("ativos", "true").param("cdId", "1").header("Authorization", usuario))
+                .andExpect(status().isOk());
+    }
 }

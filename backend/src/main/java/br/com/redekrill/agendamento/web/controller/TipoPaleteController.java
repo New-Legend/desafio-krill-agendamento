@@ -33,8 +33,9 @@ public class TipoPaleteController {
     }
 
     @GetMapping
-    public List<TipoPalete> listar(@RequestParam(defaultValue = "false") boolean ativos) {
-        return useCase.listar(ativos);
+    public List<TipoPalete> listar(@RequestParam(defaultValue = "false") boolean ativos,
+                                   @RequestParam(required = false) Long cdId) {
+        return useCase.listar(ativos, cdId);
     }
 
     @PostMapping
@@ -60,6 +61,6 @@ public class TipoPaleteController {
     }
 
     private static TipoPaleteUseCase.Dados dados(Requisicoes.TipoPalete b) {
-        return new TipoPaleteUseCase.Dados(b.codigo(), b.nome(), b.valorReposicao(), b.ordem(), b.ativo());
+        return new TipoPaleteUseCase.Dados(b.codigo(), b.nome(), b.valorReposicao(), b.ordem(), b.ativo(), b.cdId());
     }
 }

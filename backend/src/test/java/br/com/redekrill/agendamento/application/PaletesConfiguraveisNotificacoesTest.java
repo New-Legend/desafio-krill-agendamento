@@ -80,7 +80,7 @@ class PaletesConfiguraveisNotificacoesTest {
         public boolean existeCodigo(String c, Long ign) { return itens.stream().anyMatch(t -> t.codigo().equals(c) && !t.id().equals(ign)); }
         public boolean emUso(String c) { return usados.contains(c); }
         public TipoPalete salvar(TipoPalete t) {
-            TipoPalete s = t.id() == null ? new TipoPalete((long) itens.size() + 1, t.codigo(), t.nome(), t.valorReposicao(), t.ordem(), t.ativo()) : t;
+            TipoPalete s = t.id() == null ? new TipoPalete((long) itens.size() + 1, t.codigo(), t.nome(), t.valorReposicao(), t.ordem(), t.ativo(), t.cdId()) : t;
             itens.removeIf(x -> x.id().equals(s.id()));
             itens.add(s);
             return s;

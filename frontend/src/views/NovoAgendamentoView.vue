@@ -17,7 +17,7 @@ const { enviando, enviar } = useEnvio()
 const vazio = () => ({
   data: deIso(route.query.data && route.query.data >= hoje() ? route.query.data : hoje()),
   faixaHorariaId: null, idPedido: null, fornecedor: '', emailFornecedor: '',
-  tipoCaminhaoId: null, tipoPaletizacaoId: null, quantidadePaletes: null, observacao: '', cdId: null, fornecedorId: null
+  tipoCaminhaoId: null, tipoPaletizacaoId: null, quantidadePaletes: null, observacao: '', cdId: null, fornecedorId: null, loja: '', transportadora: ''
 })
 const form = reactive(vazio())
 const erros = ref({})
@@ -72,9 +72,29 @@ async function simular() {
 }
 
 watch(() => [form.cdId, form.data, form.faixaHorariaId, form.tipoPaletizacaoId, form.quantidadePaletes], simular)
+
+/** Capacidade diária do destino (CD ou loja da entrega direta), com o % já ocupado no dia. */
+const destino = ref(null)
+async function consultarDestino() {
+  if (!form.data) return
+  try {
+    destino.value = await api('/capacidades-recebimento/ocupacao', { params: { data: isoData(form.data), cdId: form.cdId, loja: (form.loja || '').trim() } })
+  } catch {
+    destino.value = null
+  }
+}
+watch(() => [form.cdId, form.data, form.loja], consultarDestino)
+const destinoApos = computed(() => {
+  const d = destino.value
+  if (!d || !d.limitado) return null
+  const pal = d.capacidadePaletes ? ((d.paletes + equivalentes.value) * 100) / d.capacidadePaletes : 0
+  const cam = d.capacidadeCaminhoes ? ((d.caminhoes + 1) * 100) / d.capacidadeCaminhoes : 0
+  return Math.max(pal, cam)
+})
 watch(form, () => { if (tentouEnviar.value) erros.value = validarAgendamento(payload()) })
 
 onMounted(async () => {
+  consultarDestino()
   try {
     const [c, p] = await Promise.all([api('/tipos-caminhao'), api('/tipos-paletizacao')])
     caminhoes.value = c.filter((x) => x.ativo)
@@ -114,7 +134,9 @@ function payload() {
     data: isoData(form.data),
     fornecedor: form.fornecedor.trim(),
     emailFornecedor: form.emailFornecedor.trim(),
-    observacao: form.observacao?.trim() || null
+    observacao: form.observacao?.trim() || null,
+    loja: form.loja?.trim() || null,
+    transportadora: form.transportadora?.trim() || null
   }
 }
 
@@ -131,6 +153,7 @@ function salvar() {
       const r = await api('/agendamentos', { method: 'POST', body })
       notificar.sucesso(`Agendamento #${r.agendamento.id} criado. E-mail enviado para ${r.agendamento.emailFornecedor}.`, 'Agendamento confirmado')
       r.alertas.forEach((a) => notificar.aviso(a.mensagem, 'Capacidade excedida'))
+      ;(r.alertasDestino || []).forEach((m) => notificar.aviso(m, 'Capacidade diária excedida'))
       router.push(`/agendamentos/${r.agendamento.id}`)
     } catch (e) {
       notificar.erro(e)
@@ -214,6 +237,26 @@ function limpar() {
         <label for="paletizacao">Tipo de paletização <span class="obrig">*</span></label>
         <Select v-model="form.tipoPaletizacaoId" input-id="paletizacao" :options="paletizacoes" option-label="nome" option-value="id" :invalid="!!erros.tipoPaletizacaoId" />
         <span v-if="erros.tipoPaletizacaoId" class="erro">{{ erros.tipoPaletizacaoId }}</span>
+      </div>
+      <div class="campo c6">
+        <label for="loja">Entrega direta na loja</label>
+        <InputText id="loja" v-model="form.loja" maxlength="80" />
+        <span class="dica">Vazio = entrega no CD. Com loja, vale a capacidade diária da loja.</span>
+      </div>
+      <div class="campo c6">
+        <label for="transp">Transportadora</label>
+        <InputText id="transp" v-model="form.transportadora" maxlength="80" />
+      </div>
+      <div v-if="destino" class="campo c12 destino">
+        <label>Capacidade do dia — {{ destino.destino }}</label>
+        <template v-if="destino.limitado">
+          <BarraOcupacao :percentual="destino.percentual" :ocupado="destino.paletes" :capacidade="destino.capacidadePaletes" />
+          <span class="dica">
+            {{ destino.caminhoes }} caminhão(ões){{ destino.capacidadeCaminhoes ? ` de ${destino.capacidadeCaminhoes}` : '' }} agendado(s).
+            <template v-if="destinoApos !== null">Com este agendamento: {{ fmtPct(destinoApos) }}{{ destinoApos > 100 ? ' — acima da capacidade (o agendamento é aceito com alerta)' : '' }}.</template>
+          </span>
+        </template>
+        <span v-else class="dica">Sem limite diário cadastrado para {{ destino.destino }}.</span>
       </div>
       <div class="campo c6">
         <label for="obs">Observação</label>

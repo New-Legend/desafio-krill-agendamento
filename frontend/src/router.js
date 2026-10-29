@@ -31,6 +31,10 @@ export const routes = [
   { path: '/cadastros/descarga', name: 'parametros-descarga', component: () => import('./views/ParametrosDescargaView.vue'), meta: { admin: true, titulo: 'Tempos de descarga' } },
   { path: '/cadastros/tipos-palete', name: 'tipos-palete', component: () => import('./views/TiposPaleteView.vue'), meta: { admin: true, titulo: 'Tipos de palete' } },
   { path: '/cadastros/conferentes', name: 'conferentes', component: () => import('./views/ConferentesView.vue'), meta: { admin: true, titulo: 'Conferentes' } },
+  { path: '/patio', name: 'patio', component: () => import('./views/PatioView.vue'), meta: { titulo: 'Pátio e docas' } },
+  { path: '/cadastros/docas', name: 'docas', component: () => import('./views/DocasView.vue'), meta: { admin: true, titulo: 'Docas' } },
+  { path: '/cadastros/capacidade-recebimento', name: 'capacidade-recebimento', component: () => import('./views/CapacidadeRecebimentoView.vue'), meta: { admin: true, titulo: 'Capacidade por CD e loja' } },
+  { path: '/cadastros/taxas-descarga', name: 'taxas-descarga', component: () => import('./views/TaxasDescargaView.vue'), meta: { admin: true, titulo: 'Taxa de descarga por modal' } },
   { path: '/auditoria', name: 'auditoria', component: () => import('./views/AuditoriaView.vue'), meta: { admin: true, titulo: 'Auditoria' } },
   { path: '/:pathMatch(.*)*', redirect: '/inicio' }
 ]

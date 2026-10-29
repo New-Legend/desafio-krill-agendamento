@@ -7,6 +7,7 @@ import br.com.redekrill.agendamento.application.dto.ResultadoAgendamento;
 import br.com.redekrill.agendamento.application.dto.Simulacao;
 import br.com.redekrill.agendamento.application.usecase.AgendamentoUseCase;
 import br.com.redekrill.agendamento.application.usecase.AuditoriaUseCase;
+import br.com.redekrill.agendamento.application.usecase.PatioUseCase;
 import br.com.redekrill.agendamento.domain.model.StatusAgendamento;
 import br.com.redekrill.agendamento.web.dto.Requisicoes;
 import br.com.redekrill.agendamento.web.dto.Respostas.AgendamentoResp;
@@ -49,11 +50,12 @@ public class AgendamentoController {
 
     private final AgendamentoUseCase useCase;
     private final AuditoriaUseCase auditoria;
+    private final PatioUseCase patio;
 
-    public AgendamentoController(AgendamentoUseCase useCase,
-                                 AuditoriaUseCase auditoria) {
+    public AgendamentoController(AgendamentoUseCase useCase, AuditoriaUseCase auditoria, PatioUseCase patio) {
         this.useCase = useCase;
         this.auditoria = auditoria;
+        this.patio = patio;
     }
 
     @PostMapping("/agendamentos")
@@ -64,7 +66,9 @@ public class AgendamentoController {
         ResultadoAgendamento r = useCase.criar(new NovoAgendamento(b.data(), b.faixaHorariaId(), b.idPedido(),
                 b.fornecedor(), b.emailFornecedor(), b.tipoCaminhaoId(), b.tipoPaletizacaoId(),
                 b.quantidadePaletes(), b.observacao(), b.cdId(), b.fornecedorId()), Requisicao.solicitante(req));
-        return new CriacaoResp(AgendamentoResp.de(r.agendamento()), r.alertas(), r.linkFornecedor());
+        Long id = r.agendamento().agendamento().getId();
+        List<String> destino = patio.registrarLogistica(id, b.loja(), b.transportadora(), b.modalDescarga(), Requisicao.solicitante(req));
+        return new CriacaoResp(AgendamentoResp.de(r.agendamento()), r.alertas(), r.linkFornecedor(), destino);
     }
 
     @GetMapping("/agendamentos")

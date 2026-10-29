@@ -1,5 +1,16 @@
 package br.com.redekrill.agendamento.infrastructure.config;
 
+import br.com.redekrill.agendamento.application.port.CapacidadeRecebimentoRepositorio;
+import br.com.redekrill.agendamento.application.port.ConfiguracaoRepositorio;
+import br.com.redekrill.agendamento.application.port.DocaRepositorio;
+import br.com.redekrill.agendamento.application.port.ItemAvulsoRepositorio;
+import br.com.redekrill.agendamento.application.port.LogisticaRepositorio;
+import br.com.redekrill.agendamento.application.port.TaxaDescargaRepositorio;
+import br.com.redekrill.agendamento.application.usecase.CapacidadeRecebimentoUseCase;
+import br.com.redekrill.agendamento.application.usecase.ConfiguracaoValePaleteUseCase;
+import br.com.redekrill.agendamento.application.usecase.ItemAvulsoUseCase;
+import br.com.redekrill.agendamento.application.usecase.PatioUseCase;
+import br.com.redekrill.agendamento.application.usecase.TaxaDescargaUseCase;
 import br.com.redekrill.agendamento.application.port.AgendamentoRepositorio;
 import br.com.redekrill.agendamento.application.port.AuditoriaRepositorio;
 import br.com.redekrill.agendamento.application.port.FaixaHorariaRepositorio;
@@ -90,8 +101,9 @@ public class UseCaseConfig {
 
     @Bean
     ValePaleteUseCase valePaleteUseCase(ValePaleteRepositorio v, AgendamentoRepositorio ag, AuditoriaUseCase a,
-                                        Transacao tx, Clock clock, TipoPaleteUseCase tipos) {
-        return new ValePaleteUseCase(v, ag, a, tx, clock, tipos);
+                                        Transacao tx, Clock clock, TipoPaleteUseCase tipos,
+                                        ConfiguracaoValePaleteUseCase config) {
+        return new ValePaleteUseCase(v, ag, a, tx, clock, tipos).comConfiguracao(config);
     }
 
     @Bean
@@ -146,5 +158,35 @@ public class UseCaseConfig {
                                           CanalEmailDocumentos email, NotificadorWhatsApp w, NotificacaoEnvioRepositorio e,
                                           AuditoriaUseCase a, Clock clock) {
         return new NotificacaoUseCase(p, ag, f, email, w, e, a, clock);
+    }
+
+    @Bean
+    ConfiguracaoValePaleteUseCase configuracaoValePaleteUseCase(ConfiguracaoRepositorio r, AuditoriaUseCase a, Transacao tx) {
+        return new ConfiguracaoValePaleteUseCase(r, a, tx);
+    }
+
+    @Bean
+    CapacidadeRecebimentoUseCase capacidadeRecebimentoUseCase(CapacidadeRecebimentoRepositorio r, LogisticaRepositorio l,
+                                                              CentroDistribuicaoRepositorio cds, ParametroRepositorio p,
+                                                              AuditoriaUseCase a, Transacao tx) {
+        return new CapacidadeRecebimentoUseCase(r, l, cds, p, a, tx);
+    }
+
+    @Bean
+    TaxaDescargaUseCase taxaDescargaUseCase(TaxaDescargaRepositorio r, AuditoriaUseCase a, Transacao tx) {
+        return new TaxaDescargaUseCase(r, a, tx);
+    }
+
+    @Bean
+    PatioUseCase patioUseCase(DocaRepositorio d, LogisticaRepositorio l, AgendamentoRepositorio ag, AgendamentoUseCase uc,
+                              CentroDistribuicaoRepositorio cds, CapacidadeRecebimentoUseCase cap, TaxaDescargaUseCase t,
+                              AuditoriaUseCase a, Transacao tx, Clock clock) {
+        return new PatioUseCase(d, l, ag, uc, cds, cap, t, a, tx, clock);
+    }
+
+    @Bean
+    ItemAvulsoUseCase itemAvulsoUseCase(ItemAvulsoRepositorio r, ProdutoRepositorio p, AgendamentoRepositorio ag,
+                                        AuditoriaUseCase a, Transacao tx, Clock clock) {
+        return new ItemAvulsoUseCase(r, p, ag, a, tx, clock);
     }
 }

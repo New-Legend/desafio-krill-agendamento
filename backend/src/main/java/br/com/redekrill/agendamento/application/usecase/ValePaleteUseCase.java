@@ -28,6 +28,7 @@ public class ValePaleteUseCase {
     private final Transacao transacao;
     private final Clock clock;
     private final TipoPaleteUseCase tipos;
+    private ConfiguracaoValePaleteUseCase configuracao;
 
     public ValePaleteUseCase(ValePaleteRepositorio vales, AgendamentoRepositorio agendamentos, AuditoriaUseCase auditoria,
                              Transacao transacao, Clock clock) {
@@ -42,6 +43,12 @@ public class ValePaleteUseCase {
         this.auditoria = auditoria;
         this.transacao = transacao;
         this.clock = clock;
+    }
+
+    /** Liga a configuração "exigir as duas assinaturas" (opcional; sem ela a devolução não exige assinaturas). */
+    public ValePaleteUseCase comConfiguracao(ConfiguracaoValePaleteUseCase c) {
+        this.configuracao = c;
+        return this;
     }
 
     public ValePalete emitir(NovoVale cmd, Solicitante solicitante) {
@@ -92,7 +99,8 @@ public class ValePaleteUseCase {
     }
 
     public ValePalete registrarDevolucao(Long id, ValePalete.Quantidades q, Solicitante s) {
-        return alterar(id, s, "DEVOLUCAO", v -> v.registrarDevolucao(q));
+        boolean exigir = configuracao != null && configuracao.exigirDuasAssinaturas();
+        return alterar(id, s, "DEVOLUCAO", v -> v.registrarDevolucao(q, exigir));
     }
 
     public ValePalete cancelar(Long id, Solicitante s) {

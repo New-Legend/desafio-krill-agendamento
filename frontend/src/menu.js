@@ -19,6 +19,7 @@ export function menuItens(admin) {
     grupo: 'Recebimento',
     itens: [
       { to: '/rotina', label: 'Rotina do dia', icon: 'pi pi-list-check' },
+      { to: '/patio', label: 'Pátio e docas', icon: 'pi pi-truck' },
       { to: '/divergencias', label: 'Divergências', icon: 'pi pi-exclamation-triangle' },
       { to: '/relatorios/descarga', label: 'Tempos de descarga', icon: 'pi pi-stopwatch' }
     ]
@@ -43,10 +44,13 @@ export function menuItens(admin) {
         { to: '/cadastros/cds', label: 'Centros de distribuição', icon: 'pi pi-building' },
         { to: '/cadastros/fornecedores', label: 'Fornecedores', icon: 'pi pi-users' },
         { to: '/cadastros/produtos', label: 'Produtos e pesos', icon: 'pi pi-barcode' },
-        { to: '/cadastros/capacidade', label: 'Capacidade', icon: 'pi pi-sliders-h' },
+        { to: '/cadastros/capacidade', label: 'Capacidade e faixas', icon: 'pi pi-sliders-h' },
+        { to: '/cadastros/capacidade-recebimento', label: 'Capacidade por CD e loja', icon: 'pi pi-chart-pie' },
+        { to: '/cadastros/docas', label: 'Docas', icon: 'pi pi-sign-in' },
         { to: '/cadastros/faixas', label: 'Faixas horárias', icon: 'pi pi-clock' },
         { to: '/cadastros/caminhoes', label: 'Caminhões', icon: 'pi pi-truck' },
         { to: '/cadastros/descarga', label: 'Tempos de descarga', icon: 'pi pi-stopwatch' },
+        { to: '/cadastros/taxas-descarga', label: 'Taxa de descarga', icon: 'pi pi-dollar' },
         { to: '/cadastros/paletizacao', label: 'Paletização', icon: 'pi pi-box' },
         { to: '/cadastros/tipos-palete', label: 'Tipos de palete', icon: 'pi pi-th-large' },
         { to: '/cadastros/conferentes', label: 'Conferentes', icon: 'pi pi-id-card' }

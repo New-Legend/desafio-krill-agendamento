@@ -152,7 +152,18 @@ public class ValePalete {
 
     /** Registra devolução (total ou parcial). Quitado quando não resta saldo. */
     public void registrarDevolucao(Quantidades devolucao) {
+        registrarDevolucao(devolucao, false);
+    }
+
+    /**
+     * Com "exigir as duas assinaturas" ligado (configuração do vale-palete), a devolução só é registrada
+     * depois que motorista e conferente assinaram.
+     */
+    public void registrarDevolucao(Quantidades devolucao, boolean exigirDuasAssinaturas) {
         exigirAberto();
+        if (exigirDuasAssinaturas && (assinaturaMotorista == null || assinaturaConferente == null)) {
+            throw new RegraNegocioException("Colete as duas assinaturas (motorista e conferente) antes de registrar a devolução");
+        }
         Quantidades novo = devolvidos.mais(devolucao);
         if (devolucao.total() == 0) throw new RegraNegocioException("Informe a quantidade devolvida");
         if (novo.excede(entregues)) throw new RegraNegocioException("Devolução maior que o saldo do vale");

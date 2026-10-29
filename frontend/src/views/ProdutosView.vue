@@ -1,6 +1,18 @@
 <script setup>
 import { ref } from 'vue'
+import { api } from '../api'
+import { baixarArquivo } from '../utils'
+import { useNotificar } from '../composables/useNotificar'
 import CadastroCrud from '../components/CadastroCrud.vue'
+
+const notificar = useNotificar()
+async function exportar() {
+  try {
+    baixarArquivo(await api('/produtos/exportar.csv', { blob: true }), 'catalogo_produtos.csv')
+  } catch (e) {
+    notificar.erro(e)
+  }
+}
 
 const semPeso = ref(false)
 const crud = ref(null)
@@ -25,6 +37,7 @@ function alternar() {
     <template #rodape>
       <div class="acoes-rodape">
         <Button :label="semPeso ? 'Mostrar todos' : 'Somente sem peso'" icon="pi pi-filter" class="btn-secundario" @click="alternar" />
+        <Button label="Exportar catálogo (CSV)" icon="pi pi-download" class="btn-secundario" @click="exportar" />
         <span class="texto-suave">Produtos novos entram automaticamente ao importar o XML da NF-e. Informe o peso para o cálculo de carga.</span>
       </div>
     </template>

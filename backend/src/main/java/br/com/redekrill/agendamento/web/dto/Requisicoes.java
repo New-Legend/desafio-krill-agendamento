@@ -37,7 +37,10 @@ public final class Requisicoes {
             @Max(value = 10000, message = "Quantidade de paletes acima do permitido") @Schema(example = "22") Integer quantidadePaletes,
             @Size(max = 500, message = "Observação deve ter no máximo 500 caracteres") String observacao,
             @Schema(description = "CD de destino (padrão 1)", example = "1") Long cdId,
-            @Schema(description = "Fornecedor cadastrado (opcional)") Long fornecedorId) {
+            @Schema(description = "Fornecedor cadastrado (opcional)") Long fornecedorId,
+            @Size(max = 80) @Schema(description = "Entrega direta na loja (vazio = no CD)") String loja,
+            @Size(max = 80) String transportadora,
+            @Size(max = 20) @Schema(description = "Modal de descarga (SIDER, BAU, GRANEL...); vazio = deduzido do caminhão") String modalDescarga) {
     }
 
     public record Reagendar(@NotNull(message = "Data é obrigatória") @Schema(example = "2026-11-05") LocalDate data,
@@ -157,7 +160,7 @@ public final class Requisicoes {
     public record TipoPalete(@Size(max = 20) @Schema(example = "PALLET_PLASTICO") String codigo,
                              @NotBlank(message = "Nome é obrigatório") @Size(max = 40) String nome,
                              @DecimalMin("0.00") @DecimalMax("99999.99") BigDecimal valorReposicao,
-                             @Min(0) @Max(999) Integer ordem, Boolean ativo) {
+                             @Min(0) @Max(999) Integer ordem, Boolean ativo, Long cdId) {
     }
 
     public record Conferente(Long cdId, @NotBlank(message = "Nome é obrigatório") @Size(max = 80) String nome, Boolean ativo) {
@@ -172,5 +175,33 @@ public final class Requisicoes {
     public record InscricaoPush(@NotBlank @Size(max = 1000) String endpoint,
                                 @NotBlank @Size(max = 255) String p256dh,
                                 @NotBlank @Size(max = 255) String auth) {
+    }
+
+    public record Doca(Long cdId, @NotBlank(message = "Código é obrigatório") @Size(max = 10) String codigo,
+                       @NotBlank(message = "Nome é obrigatório") @Size(max = 40) String nome, Boolean ativa) {
+    }
+
+    public record AtribuirDoca(Long docaId) {
+    }
+
+    public record Logistica(@Size(max = 80) String loja, @Size(max = 80) String transportadora, @Size(max = 20) String modalDescarga) {
+    }
+
+    public record CapacidadeRecebimento(Long cdId, @Size(max = 80) String loja, @Min(1) @Max(7) Integer diaSemana,
+                                        @Min(1) @Max(100000) Integer paletes, @Min(1) @Max(10000) Integer caminhoes) {
+    }
+
+    public record TaxaDescarga(@Size(max = 20) String modal, @NotBlank(message = "Nome é obrigatório") @Size(max = 40) String nome,
+                               @NotNull(message = "Informe a taxa") @DecimalMin("0.00") @DecimalMax("99999.99") BigDecimal valorPorPalete,
+                               Boolean ativo) {
+    }
+
+    public record ItemAvulso(Long produtoId, @NotBlank(message = "Código é obrigatório") @Size(max = 60) String codigo,
+                             @NotBlank(message = "Descrição é obrigatória") @Size(max = 120) String descricao,
+                             @NotNull(message = "Informe a quantidade") @DecimalMin(value = "0.001", message = "Quantidade deve ser maior que zero") BigDecimal quantidade,
+                             @Size(max = 6) String unidade, @Size(max = 255) String observacao, Boolean cadastrarProduto) {
+    }
+
+    public record ConfiguracaoValePalete(Boolean exigirDuasAssinaturas, @NotBlank String agrupamento) {
     }
 }

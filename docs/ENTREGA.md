@@ -9,6 +9,7 @@
 docker compose up --build
 ```
 
+- Pré-requisito: só Docker com Compose. Passo a passo e acesso pela rede no [README](../README.md#como-rodar).
 - Aplicação: http://localhost:8081. Login `admin` / `admin123` (ADMIN) ou `usuario` / `usuario123` (USUARIO).
 - Swagger: http://localhost:8080/swagger-ui/index.html
 - E-mails enviados (Mailpit): http://localhost:8025
@@ -28,7 +29,7 @@ docker compose up --build
 | Java 17+ / Spring Boot 3 / JPA / Security JWT / Flyway / PostgreSQL / Swagger | ✅ |
 | Vue 3 + Vite + PrimeVue | ✅ |
 | Dockerfiles multi-stage, não-root, nginx + compose (db, api, web, mail) | ✅ |
-| JUnit 5, Mockito, Testcontainers, JaCoCo ≥ 80% em domain/application, Vitest | ✅ backend: 80 testes, domain+application 99,7% de linhas e 88,2% de ramos. Frontend: 57 testes (Vitest + Vue Test Utils), 95,5% de linhas e 82,1% de ramos nas telas críticas (formulário, lista/detalhe, cadastros, guarda de rota, login e telas do porte) |
+| JUnit 5, Mockito, Testcontainers, JaCoCo ≥ 80% em domain/application, Vitest | ✅ backend: 94 testes, domain+application 99,7% de linhas e 89,3% de ramos. Frontend: 63 testes (Vitest + Vue Test Utils), 94,6% de linhas e 81,7% de ramos nas telas críticas (formulário, lista/detalhe, cadastros, guarda de rota, login e telas do porte) |
 | Clean Architecture, README em pt-BR | ✅ |
 | Relatório de segurança (OWASP Dependency-Check) | ✅ configurado, veja [SEGURANCA.md](SEGURANCA.md) |
 | **Extra:** PWA instalável + Web Push (novo, cancelado, capacidade excedida, chegada, divergência) | ✅ |
@@ -40,6 +41,10 @@ docker compose up --build
 | **Extra:** E-mail da cobrança/recibo de paletes (Mailpit), com histórico de envios | ✅ |
 | **Extra:** WhatsApp como canal plugável: link `wa.me` com mensagem pronta; adaptador da API do WhatsApp Business pronto e desligado | ✅ |
 | **Extra:** Conferentes por CD | ✅ |
+| **Extra:** Pátio e docas do recebimento: docas por CD, quadro do pátio, atribuir doca, CD lotado agora e no dia | ✅ |
+| **Extra:** Capacidade diária de recebimento por CD e por loja (paletes/caminhões, por dia da semana), com % no agendamento | ✅ |
+| **Extra:** Taxa de descarga por modal (sider, baú, granel), exportação do catálogo em CSV e produto avulso no recebimento | ✅ |
+| **Extra:** Tipos de palete por CD, "exigir as duas assinaturas" no vale e conta-corrente por transportadora | ✅ |
 
 ## Por que PostgreSQL
 
@@ -62,6 +67,7 @@ docker compose up --build
 - **Multi-CD sem duplicar regra:** a capacidade do CD (quando informada) substitui a do parâmetro geral e a de cada faixa; a `CalculadoraOcupacao` é a mesma.
 - **NF-e:** parser DOM com DTD e entidades externas desligadas (sem XXE), limite de 2 MB, chave única. Peso calculado pelos produtos e comparado ao peso da nota com 5% de tolerância.
 - **Adaptadores novos com `JdbcClient`:** as tabelas do porte (CD, fornecedor, produto, NF-e, cobrança, movimento) usam SQL direto e simples; agendamento e vale seguem em JPA.
+- **Pátio e capacidade sem mexer no agregado:** loja, transportadora, doca e modal ficam em `agendamento_logistica` (1:1 com o agendamento), então a regra do desafio e o `Agendamento` não mudaram. A capacidade por CD/loja (`capacidade_recebimento`) só alerta, igual à regra de 480/120; CD sem regra própria cai na capacidade do cadastro de CDs.
 - **PWA:** `vite-plugin-pwa` com service worker próprio (cache da casca, rota offline, push). As chaves VAPID vêm do ambiente ou são geradas e salvas no banco na primeira subida.
 
 ## Segurança
@@ -77,4 +83,6 @@ docker compose up --build
 
 ## Telas
 
-Em [docs/prints](prints), versões desktop e celular (atualizadas em 27/10/2026, horário de Brasília, com o compose no ar): login, início/dashboard, novo agendamento (já preenchido pelo ERP), lista, detalhe com portaria, ocupação da semana, relatório, vale-palete (lista e impressão), cadastros, auditoria, página pública do fornecedor, Swagger, e-mail no Mailpit (com o logo), rotina do dia, divergências, tempos de descarga, conta-corrente, cobranças, recibo, paletes nas lojas, fornecedores, CDs, produtos/pesos, parâmetros de descarga, NF-e no detalhe, menu completo e o fornecedor remarcando.
+Em [docs/prints](prints), versões desktop e celular com o compose no ar: login, início/dashboard, novo agendamento (já preenchido pelo ERP), lista, detalhe com portaria, ocupação da semana, relatório, vale-palete (lista e impressão), cadastros, auditoria, página pública do fornecedor, Swagger, e-mail no Mailpit (com o logo), rotina do dia, divergências, tempos de descarga, conta-corrente, cobranças, recibo, paletes nas lojas, fornecedores, CDs, produtos/pesos, parâmetros de descarga, NF-e no detalhe, menu completo e o fornecedor remarcando (01–30, 27/10/2026).
+
+Novas em 29/10/2026 (horário de Brasília): 31 tipos de palete + configurações do vale, 32 conferentes, 33 cobrança por e-mail/WhatsApp, 34 pátio e docas, 35 capacidade por CD e loja ("Está cheio?"), 36 cadastro de docas, 37 taxa de descarga por modal, 38 produto avulso no detalhe, 39 novo agendamento com entrega na loja e % de capacidade, 40 conta-corrente por transportadora.

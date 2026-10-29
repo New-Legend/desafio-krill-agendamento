@@ -8,15 +8,25 @@ Sistema web para agendar a entrega de caminhões no recebimento do CD, controlan
 
 ## Como rodar
 
+Pré-requisito: Docker com o plugin Compose (Docker Desktop no Windows/macOS). Não precisa de Java, Node nem Postgres na máquina.
+
 ```bash
-docker compose up --build
+git clone https://github.com/New-Legend/desafio-krill-agendamento.git
+cd desafio-krill-agendamento
+docker compose up --build        # primeira vez leva alguns minutos (compila API e tela)
 ```
+
+Quando os quatro serviços ficarem `healthy` (`docker compose ps`), abra:
 
 | Serviço | Endereço |
 |---|---|
 | Aplicação (PWA) | http://localhost:8081 |
 | API / Swagger | http://localhost:8080/swagger-ui/index.html (também em http://localhost:8081/swagger-ui/index.html) |
 | Caixa de e-mail (Mailpit) | http://localhost:8025 |
+
+Para parar: `docker compose down` (os dados ficam no volume; `docker compose down -v` apaga tudo e recria do zero na próxima subida).
+
+Acesso de outro computador ou do celular na mesma rede: troque `localhost` pelo IP da máquina que roda o compose (ex.: `http://192.168.0.10:8081`). Para acesso pela internet é preciso publicar em um servidor ou usar um túnel (ex.: Cloudflare Tunnel) apontando para a porta 8081.
 
 ### Usuários padrão
 
@@ -69,6 +79,11 @@ Relatório de cobertura: `backend/target/site/jacoco/index.html`.
 - **E-mail da cobrança de paletes** (ou do recibo) pelo SMTP/Mailpit, com histórico de envios.
 - **WhatsApp:** botão que abre o `wa.me` com a mensagem pronta (agendamento e cobrança). Envio automático pela API do WhatsApp Business é opcional (`WHATSAPP_PROVEDOR=cloud-api`), desligado por padrão.
 - **Conferentes por CD:** a conferência só inicia com um conferente ativo do CD (quando houver cadastro).
+- **Pátio e docas:** cadastro de docas por CD e quadro do pátio (previstos, aguardando doca, na doca, descarregando, liberados), atribuição/liberação de doca e indicador de **CD lotado agora** (docas) e **capacidade do dia**.
+- **Capacidade diária por CD e por loja:** limite de paletes e/ou caminhões por dia, geral ou por dia da semana. O novo agendamento mostra o % do destino (CD ou loja da entrega direta) e alerta ao passar.
+- **Taxa de descarga por modal** (sider/carreta, baú, granel e outros), deduzida do tipo de caminhão quando não informada, exibida em cada caminhão do pátio.
+- **Produtos:** exportação do catálogo em CSV e **produto avulso** lançado na conferência (fora da NF-e).
+- **Vale-palete:** tipos de palete por CD, opção **exigir as duas assinaturas** antes da devolução e conta-corrente agrupada por **transportadora**.
 
 ## Arquitetura
 

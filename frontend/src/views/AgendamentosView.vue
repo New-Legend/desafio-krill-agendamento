@@ -9,6 +9,7 @@ import { useNotificar } from '../composables/useNotificar'
 import StatusAgendamento from '../components/StatusAgendamento.vue'
 import EscolhaHorario from '../components/EscolhaHorario.vue'
 import NotasFiscais from '../components/NotasFiscais.vue'
+import ItensAvulsos from '../components/ItensAvulsos.vue'
 import SeletorCd from '../components/SeletorCd.vue'
 import WhatsAppAviso from '../components/WhatsAppAviso.vue'
 
@@ -258,6 +259,7 @@ onMounted(() => {
         </div>
       </div>
       <NotasFiscais v-if="['CHEGOU', 'EM_RECEBIMENTO', 'RECEBIDO'].includes(detalhe.status)" :key="detalhe.id" :agendamento-id="detalhe.id" :admin="isAdmin" :concluido="detalhe.status === 'RECEBIDO'" />
+      <ItensAvulsos v-if="['CHEGOU', 'EM_RECEBIMENTO', 'RECEBIDO'].includes(detalhe.status)" :key="`avulso-${detalhe.id}`" :agendamento-id="detalhe.id" :admin="isAdmin" />
       <div v-if="link" class="link-fornecedor">
         <label for="lk">Link do fornecedor</label>
         <InputText id="lk" :model-value="link" readonly @focus="$event.target.select()" />
