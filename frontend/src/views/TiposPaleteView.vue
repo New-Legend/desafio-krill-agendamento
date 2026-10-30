@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { api } from '../api'
-import { isAdmin } from '../sessao'
+import { pode } from '../sessao'
 import CadastroCrud from '../components/CadastroCrud.vue'
 import { fmtMoeda } from '../utils'
 import { useTiposPalete } from '../composables/useTiposPalete'
@@ -59,14 +59,14 @@ onMounted(async () => {
     <h2>Configurações do vale-palete</h2>
     <form class="grade" novalidate @submit.prevent="salvarConfig">
       <div class="campo c6 linha-switch">
-        <ToggleSwitch v-model="config.exigirDuasAssinaturas" input-id="cfg-ass" :disabled="!isAdmin" />
+        <ToggleSwitch v-model="config.exigirDuasAssinaturas" input-id="cfg-ass" :disabled="!pode(1410)" />
         <label for="cfg-ass">Exigir as duas assinaturas (motorista e conferente) antes de registrar a devolução</label>
       </div>
       <div class="campo c3">
         <label for="cfg-agr">Agrupar a conta-corrente por</label>
-        <Select v-model="config.agrupamento" input-id="cfg-agr" :options="AGRUPAMENTOS" option-label="label" option-value="value" :disabled="!isAdmin" />
+        <Select v-model="config.agrupamento" input-id="cfg-agr" :options="AGRUPAMENTOS" option-label="label" option-value="value" :disabled="!pode(1410)" />
       </div>
-      <div class="campo c3 fim"><Button type="submit" label="Salvar configurações" icon="pi pi-check" class="btn-confirmar" :loading="enviando" :disabled="!isAdmin" /></div>
+      <div class="campo c3 fim"><Button type="submit" label="Salvar configurações" icon="pi pi-check" class="btn-confirmar" :loading="enviando" :disabled="!pode(1410)" /></div>
     </form>
   </section>
 </template>

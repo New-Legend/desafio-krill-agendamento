@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { erroHttp, logar, montar, sair, simularApi } from '../montar'
+import { erroHttp, logar, montar, sair, simularApi, PERMISSOES } from '../montar'
 import InicioView from '../../src/views/InicioView.vue'
 import { menuItens } from '../../src/menu'
 
@@ -11,7 +11,7 @@ describe('InicioView (centrais do Gestão CD)', () => {
     simularApi({ 'GET /dashboard': erroHttp(500, 'fora') })
     const { w } = await montar(InicioView)
     const cards = w.findAll('.central-card')
-    expect(cards.map((c) => c.find('.eyebrow').text())).toEqual(['OPE', 'REC', 'PAL', 'CAD', 'Administração'])
+    expect(cards.map((c) => c.find('.eyebrow').text())).toEqual(['OPE', 'REC', 'PAL', 'CAD', 'ADM'])
     expect(w.find('.central-links').exists()).toBe(false)
     await cards[1].find('button').trigger('click')
     expect(cards[1].classes()).toContain('aberto')
@@ -21,7 +21,11 @@ describe('InicioView (centrais do Gestão CD)', () => {
   })
 
   it('usuário comum vê só operação, recebimento e paletes', () => {
-    expect(menuItens(false).map((g) => g.grupo)).toEqual(['Operação', 'Recebimento', 'Paletes'])
-    expect(menuItens(true)[0].itens.map((i) => i.to)).toContain('/agendamentos/novo')
+    const consulta = (c) => PERMISSOES.USUARIO.includes(c)
+    expect(menuItens(consulta).map((g) => g.grupo)).toEqual(['Operação', 'Recebimento', 'Paletes'])
+    expect(menuItens(consulta)[0].itens.map((i) => i.to)).not.toContain('/agendamentos/novo')
+    expect(menuItens(() => true)[0].itens.map((i) => i.to)).toContain('/agendamentos/novo')
+    const portaria = (c) => [1102, 1204, 1205].includes(c)
+    expect(menuItens(portaria).flatMap((g) => g.itens.map((i) => i.to))).toEqual(['/inicio', '/agendamentos', '/patio'])
   })
 })

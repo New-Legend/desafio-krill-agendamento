@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { api, ApiError, quandoSessaoExpirar } from '../src/api'
-import { iniciarSessao, sessao, isAdmin, encerrarSessao } from '../src/sessao'
+import { iniciarSessao, sessao, pode, encerrarSessao } from '../src/sessao'
 
 const resposta = (status, corpo) => ({ ok: status < 400, status, json: async () => corpo, blob: async () => 'b' })
 
@@ -8,8 +8,9 @@ describe('api', () => {
   beforeEach(() => { encerrarSessao(); vi.restoreAllMocks() })
 
   it('envia token e monta query sem vazios', async () => {
-    iniciarSessao({ token: 't1', usuario: 'admin', nome: 'Adm', perfil: 'ADMIN', expiraEmSegundos: 60 })
-    expect(isAdmin.value).toBe(true)
+    iniciarSessao({ token: 't1', usuario: 'admin', nome: 'Adm', perfil: 'Administrador', permissoes: [1103], expiraEmSegundos: 60 })
+    expect(pode(1103)).toBe(true)
+    expect(pode(1005)).toBe(false)
     const f = vi.fn().mockResolvedValue(resposta(200, [1]))
     vi.stubGlobal('fetch', f)
     expect(await api('/agendamentos', { params: { inicio: '2026-11-01', status: null, fornecedor: '' } })).toEqual([1])

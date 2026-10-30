@@ -49,8 +49,8 @@ public class TratadorErros {
         return erro(HttpStatus.BAD_REQUEST, "Requisição inválida", List.of());
     }
 
-    @ExceptionHandler(BadCredentialsException.class)
-    ResponseEntity<Erro> credenciais(BadCredentialsException e) {
+    @ExceptionHandler({BadCredentialsException.class, br.com.redekrill.agendamento.domain.exception.CredenciaisInvalidasException.class})
+    ResponseEntity<Erro> credenciais(RuntimeException e) {
         return erro(HttpStatus.UNAUTHORIZED, e.getMessage(), List.of());
     }
 

@@ -11,7 +11,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -79,7 +78,6 @@ public class PaleteController {
 
     @PostMapping("/cobrancas")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Gera cobrança de paletes não devolvidos (limitada ao saldo em aberto)")
     public CobrancaResp cobrar(@Valid @RequestBody Requisicoes.Cobranca b, HttpServletRequest req) {
         return CobrancaResp.de(useCase.cobrar(new PaleteFinanceiroUseCase.NovaCobranca(b.fornecedor(), b.quantidade(),
@@ -87,14 +85,12 @@ public class PaleteController {
     }
 
     @PostMapping("/cobrancas/{id}/pagamento")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Registra o pagamento e emite o recibo RP-AAAAMMDD-NNNN")
     public CobrancaResp pagar(@PathVariable Long id, @Valid @RequestBody Requisicoes.Pagamento b, HttpServletRequest req) {
         return CobrancaResp.de(useCase.pagar(id, b.forma(), Requisicao.solicitante(req)));
     }
 
     @PatchMapping("/cobrancas/{id}/cancelamento")
-    @PreAuthorize("hasRole('ADMIN')")
     public CobrancaResp cancelar(@PathVariable Long id, @Valid @RequestBody Requisicoes.Cancelar b, HttpServletRequest req) {
         return CobrancaResp.de(useCase.cancelarCobranca(id, b.motivo(), Requisicao.solicitante(req)));
     }
@@ -109,7 +105,6 @@ public class PaleteController {
 
     @PostMapping("/movimentos")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public MovimentoResp registrar(@Valid @RequestBody Requisicoes.Movimento b, HttpServletRequest req) {
         return MovimentoResp.de(useCase.registrarMovimento(new PaleteFinanceiroUseCase.NovoMovimento(b.data(), b.tipo(),
                 b.cdId(), b.loja(), new ValePalete.Quantidades(b.quantidades()),

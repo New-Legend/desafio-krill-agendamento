@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,7 +50,6 @@ public class NotaFiscalController {
 
     @PostMapping(value = "/agendamentos/{id}/notas", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Importa o XML da NF-e (até 2 MB) no agendamento")
     public ImportacaoResp importar(@PathVariable Long id, @RequestParam("arquivo") MultipartFile arquivo,
                                    HttpServletRequest req) throws IOException {
@@ -67,7 +65,6 @@ public class NotaFiscalController {
 
     @DeleteMapping("/notas/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMIN')")
     public void excluir(@PathVariable Long id, HttpServletRequest req) {
         useCase.excluir(id, Requisicao.solicitante(req));
     }

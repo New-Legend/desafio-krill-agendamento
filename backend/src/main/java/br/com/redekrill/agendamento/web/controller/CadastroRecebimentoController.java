@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -51,13 +50,11 @@ public class CadastroRecebimentoController {
 
     @PostMapping("/cds")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public CentroDistribuicao criarCd(@Valid @RequestBody Requisicoes.CentroDistribuicao b, HttpServletRequest req) {
         return useCase.salvarCd(cd(null, b), Requisicao.solicitante(req));
     }
 
     @PutMapping("/cds/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public CentroDistribuicao alterarCd(@PathVariable Long id, @Valid @RequestBody Requisicoes.CentroDistribuicao b,
                                         HttpServletRequest req) {
         return useCase.salvarCd(cd(id, b), Requisicao.solicitante(req));
@@ -77,13 +74,11 @@ public class CadastroRecebimentoController {
 
     @PostMapping("/fornecedores")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public FornecedorResp criarFornecedor(@Valid @RequestBody Requisicoes.Fornecedor b, HttpServletRequest req) {
         return FornecedorResp.de(useCase.salvarFornecedor(fornecedor(null, b), Requisicao.solicitante(req)));
     }
 
     @PutMapping("/fornecedores/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public FornecedorResp alterarFornecedor(@PathVariable Long id, @Valid @RequestBody Requisicoes.Fornecedor b,
                                             HttpServletRequest req) {
         return FornecedorResp.de(useCase.salvarFornecedor(fornecedor(id, b), Requisicao.solicitante(req)));
@@ -98,19 +93,16 @@ public class CadastroRecebimentoController {
 
     @PostMapping("/produtos")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public Produto criarProduto(@Valid @RequestBody Requisicoes.Produto b, HttpServletRequest req) {
         return useCase.salvarProduto(produto(null, b), Requisicao.solicitante(req));
     }
 
     @PutMapping("/produtos/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public Produto alterarProduto(@PathVariable Long id, @Valid @RequestBody Requisicoes.Produto b, HttpServletRequest req) {
         return useCase.salvarProduto(produto(id, b), Requisicao.solicitante(req));
     }
 
     @PutMapping("/produtos/{id}/peso")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Atualiza peso bruto (kg por unidade) e itens por palete")
     public Produto peso(@PathVariable Long id, @Valid @RequestBody Requisicoes.PesoProduto b, HttpServletRequest req) {
         return useCase.atualizarPeso(id, b.pesoBrutoKg(), b.itensPorPalete(), Requisicao.solicitante(req));
@@ -123,7 +115,6 @@ public class CadastroRecebimentoController {
     }
 
     @PutMapping("/parametros/descarga/{tipoCaminhaoId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ParametroDescarga salvarDescarga(@PathVariable Long tipoCaminhaoId, @Valid @RequestBody Requisicoes.ParametroDescarga b,
                                             HttpServletRequest req) {
         return useCase.salvarParametroDescarga(new ParametroDescarga(tipoCaminhaoId, b.minutosPrevistos(),

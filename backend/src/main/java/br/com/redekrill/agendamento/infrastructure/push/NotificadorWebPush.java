@@ -15,7 +15,10 @@ import org.springframework.stereotype.Component;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-/** Envia notificações Web Push (VAPID) para todos os navegadores inscritos. */
+/**
+ * Envia notificações Web Push (VAPID) aos navegadores inscritos de usuários ativos cujo perfil tem a permissão
+ * 1102 (Agendamentos: consultar), como o Gestão CD faz com agendamento_ver.
+ */
 @Component
 public class NotificadorWebPush implements NotificadorPush {
 
@@ -24,9 +27,12 @@ public class NotificadorWebPush implements NotificadorPush {
     private final PushInscricaoJpa inscricoes;
     private final ChavesVapid chaves;
     private final ObjectMapper mapper;
+    private final org.springframework.jdbc.core.simple.JdbcClient db;
     private volatile PushService service;
 
-    public NotificadorWebPush(PushInscricaoJpa inscricoes, ChavesVapid chaves, ObjectMapper mapper) {
+    public NotificadorWebPush(PushInscricaoJpa inscricoes, ChavesVapid chaves, ObjectMapper mapper,
+                              org.springframework.jdbc.core.simple.JdbcClient db) {
+        this.db = db;
         this.inscricoes = inscricoes;
         this.chaves = chaves;
         this.mapper = mapper;
@@ -62,7 +68,11 @@ public class NotificadorWebPush implements NotificadorPush {
         } catch (Exception e) {
             return;
         }
+        var destinatarios = new java.util.HashSet<>(db.sql("select lower(u.username) from usuario u join perfil_acesso p on p.id = u.perfil_id "
+                + "join perfil_permissao pp on pp.perfil_id = p.id where u.ativo and p.ativo and pp.codigo = ?")
+                .param(br.com.redekrill.agendamento.domain.model.Permissao.AGENDAMENTOS_VER.codigo()).query(String.class).list());
         for (PushInscricaoEntity i : inscricoes.findAll()) {
+            if (i.usuario == null || !destinatarios.contains(i.usuario.toLowerCase())) continue;
             try {
                 HttpResponse r = service().send(new Notification(i.endpoint, i.p256dh, i.auth, payload));
                 int status = r.getStatusLine().getStatusCode();

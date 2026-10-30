@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,7 +36,6 @@ public class NotificacaoController {
     }
 
     @PostMapping("/cobrancas/{id}/email")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Envia a cobrança (ou o recibo, se paga) por e-mail e registra o envio")
     public NotificacaoEnvio enviarEmail(@PathVariable Long id, @Valid @RequestBody Requisicoes.EnvioEmail b, HttpServletRequest req) {
         return useCase.enviarEmailCobranca(id, b.para(), Requisicao.solicitante(req));
@@ -56,7 +54,6 @@ public class NotificacaoController {
     }
 
     @PostMapping("/{documento}/{id}/whatsapp")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Registra o link aberto (ou envia pela API, se configurada). documento: cobrancas | agendamentos")
     public NotificacaoEnvio whatsApp(@PathVariable String documento, @PathVariable Long id,
                                      @Valid @RequestBody(required = false) Requisicoes.EnvioWhatsApp b, HttpServletRequest req) {

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { api } from '../api'
-import { isAdmin } from '../sessao'
+import { pode } from '../sessao'
 import { fmtData, isoData } from '../utils'
 import { useEnvio } from '../composables/useEnvio'
 import { useNotificar } from '../composables/useNotificar'
@@ -61,7 +61,7 @@ defineExpose({ novo, salvar, form, erros })
     <h1>Paletes nas lojas</h1>
     <div class="acoes">
       <form @submit.prevent="carregar" class="acoes"><InputText v-model="busca" placeholder="Loja" aria-label="Loja" /><Button type="submit" icon="pi pi-search" class="btn-secundario" aria-label="Buscar" /></form>
-      <Button v-if="isAdmin" label="Novo romaneio" icon="pi pi-plus" class="btn-confirmar" @click="novo()" />
+      <Button v-if="pode(1308)" label="Novo romaneio" icon="pi pi-plus" class="btn-confirmar" @click="novo()" />
     </div>
   </div>
   <section class="painel">
@@ -72,7 +72,7 @@ defineExpose({ novo, salvar, form, erros })
       <Column v-for="c in colunas" :key="c" :header="tiposPalete.rotulo(c)" class="num"><template #body="{ data }">{{ data.porTipo[c] || 0 }}</template></Column>
       <Column header="Total" class="num" sortable sort-field="total"><template #body="{ data }"><strong>{{ data.total }}</strong></template></Column>
       <Column header="Último movimento"><template #body="{ data }">{{ fmtData(data.ultimoMovimento) }}</template></Column>
-      <Column v-if="isAdmin" header=""><template #body="{ data }"><Button label="Movimentar" icon="pi pi-arrow-right-arrow-left" size="small" class="btn-secundario" @click="novo(data.loja)" /></template></Column>
+      <Column v-if="pode(1308)" header=""><template #body="{ data }"><Button label="Movimentar" icon="pi pi-arrow-right-arrow-left" size="small" class="btn-secundario" @click="novo(data.loja)" /></template></Column>
     </DataTable>
   </section>
   <section class="painel">

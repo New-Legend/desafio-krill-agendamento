@@ -32,8 +32,8 @@ Acesso de outro computador ou do celular na mesma rede: troque `localhost` pelo 
 
 | Usuário | Senha | Perfil |
 |---|---|---|
-| `admin` | `admin123` | ADMIN — acesso total |
-| `usuario` | `usuario123` | USUARIO — apenas consulta |
+| `admin` | `admin123` | Administrador — todas as permissões |
+| `usuario` | `usuario123` | Consulta — leitura de operação, recebimento e paletes |
 
 As senhas podem ser trocadas pelas variáveis `ADMIN_PASSWORD` e `USUARIO_PASSWORD` (veja `.env.example`).
 
@@ -65,7 +65,18 @@ Relatório de cobertura: `backend/target/site/jacoco/index.html`.
 - Ao criar um agendamento, o fornecedor recebe e-mail com os dados e um **link público** para confirmar presença e informar placa/motorista.
 - Fluxo da portaria: Agendado → Confirmado → Chegou → Em recebimento → Recebido (com divergência automática se a contagem diferir), ou Cancelado / Não compareceu.
 - **Vale-palete** com assinatura do motorista e do conferente na tela (dedo ou mouse), impressão A4 e controle de devolução.
-- Auditoria (somente ADMIN) de toda ação, incluindo login: quem, quando, ação, entidade e IP.
+- Auditoria (permissão 1005) de toda ação, incluindo login: quem, quando, ação, entidade e IP.
+
+### Gestão de acessos (padrão do Gestão CD)
+
+- **Permissões numeradas** a partir de 1001, uma por tela ou ação, agrupadas por módulo: 10xx Administração, 11xx Operação, 12xx Recebimento, 13xx Paletes, 14xx Cadastros. O catálogo fica em `Permissao.java` e sai em `GET /api/v1/auth/permissoes`.
+- **Perfis** semeados pela migração V7: Administrador (todas), Recebimento (operação, recebimento e paletes), Portaria (chegada, pátio, doca e vale-palete) e Consulta (leitura). Novos perfis e ajustes em **Administração → Perfis e permissões**, com "Marcar módulo".
+- **Usuários:** lista com pílulas de perfil e situação, último acesso, filtros e menu ⋮ (editar, redefinir senha, inativar). Usuário novo ou com senha redefinida entra com **senha provisória** e só usa o sistema depois de trocá-la.
+- **Botão Permissões** (ícone de pessoa) no topo de cada tela: mostra os números que a tela usa, se o seu perfil tem cada um, e leva ao editor de perfis.
+- **No backend** o JWT só identifica o usuário: a cada requisição o filtro lê usuário e perfil no banco e entrega as permissões como authorities (`PERM_1103`). A tabela rota → permissão (`RegrasAcesso`) cobre toda escrita; o que não estiver nela é negado. Mudar o perfil ou inativar o usuário vale na hora.
+- **No front** o guarda de rota e o menu usam os mesmos números; o botão de cada ação só aparece para quem tem a permissão.
+- **Logs de acesso** (permissão 1004): entradas, saídas, senhas recusadas e trocas de senha, com IP e navegador.
+- **Push** só chega a quem tem a permissão 1102 (Agendamentos: consultar), como o Gestão CD faz com `agendamento_ver`.
 
 ### Recebimento completo (porte do Gestão CD)
 

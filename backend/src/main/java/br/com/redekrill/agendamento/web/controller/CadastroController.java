@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,7 +40,6 @@ public class CadastroController {
     }
 
     @PutMapping("/parametros/capacidade")
-    @PreAuthorize("hasRole('ADMIN')")
     public ParametroCapacidade atualizarParametro(@Valid @RequestBody Requisicoes.Parametro b, HttpServletRequest req) {
         return useCase.atualizarParametro(new ParametroCapacidade(b.capacidadeDiariaPaletes(), b.quantidadeFaixas(),
                 b.duracaoFaixaMinutos()), Requisicao.solicitante(req));
@@ -55,13 +53,11 @@ public class CadastroController {
 
     @PostMapping("/faixas-horarias")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public FaixaResp criarFaixa(@Valid @RequestBody Requisicoes.Faixa b, HttpServletRequest req) {
         return FaixaResp.de(useCase.salvarFaixa(faixa(null, b), Requisicao.solicitante(req)));
     }
 
     @PutMapping("/faixas-horarias/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public FaixaResp atualizarFaixa(@PathVariable Long id, @Valid @RequestBody Requisicoes.Faixa b, HttpServletRequest req) {
         return FaixaResp.de(useCase.salvarFaixa(faixa(id, b), Requisicao.solicitante(req)));
     }
@@ -78,13 +74,11 @@ public class CadastroController {
 
     @PostMapping("/tipos-caminhao")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public TipoCaminhao criarTipoCaminhao(@Valid @RequestBody Requisicoes.TipoCaminhao b, HttpServletRequest req) {
         return useCase.salvarTipoCaminhao(caminhao(null, b), Requisicao.solicitante(req));
     }
 
     @PutMapping("/tipos-caminhao/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public TipoCaminhao atualizarTipoCaminhao(@PathVariable Long id, @Valid @RequestBody Requisicoes.TipoCaminhao b,
                                               HttpServletRequest req) {
         return useCase.salvarTipoCaminhao(caminhao(id, b), Requisicao.solicitante(req));
@@ -102,13 +96,11 @@ public class CadastroController {
 
     @PostMapping("/tipos-paletizacao")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public TipoPaletizacao criarTipoPaletizacao(@Valid @RequestBody Requisicoes.TipoPaletizacao b, HttpServletRequest req) {
         return useCase.salvarTipoPaletizacao(paletizacao(null, b), Requisicao.solicitante(req));
     }
 
     @PutMapping("/tipos-paletizacao/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public TipoPaletizacao atualizarTipoPaletizacao(@PathVariable Long id, @Valid @RequestBody Requisicoes.TipoPaletizacao b,
                                                     HttpServletRequest req) {
         return useCase.salvarTipoPaletizacao(paletizacao(id, b), Requisicao.solicitante(req));

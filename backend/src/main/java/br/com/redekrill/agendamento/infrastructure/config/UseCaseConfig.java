@@ -72,6 +72,15 @@ public class UseCaseConfig {
     }
 
     @Bean
+    br.com.redekrill.agendamento.application.usecase.AcessoUseCase acessoUseCase(
+            br.com.redekrill.agendamento.application.port.UsuarioRepositorio u,
+            br.com.redekrill.agendamento.application.port.PerfilAcessoRepositorio p,
+            br.com.redekrill.agendamento.application.port.LogAcessoRepositorio l,
+            br.com.redekrill.agendamento.application.port.CodificadorSenha c, AuditoriaUseCase a, Transacao tx, Clock clock) {
+        return new br.com.redekrill.agendamento.application.usecase.AcessoUseCase(u, p, l, c, a, tx, clock);
+    }
+
+    @Bean
     CadastroUseCase cadastroUseCase(ParametroRepositorio p, FaixaHorariaRepositorio f, TipoCaminhaoRepositorio c,
                                     TipoPaletizacaoRepositorio t, AuditoriaUseCase a, Transacao tx) {
         return new CadastroUseCase(p, f, c, t, a, tx);

@@ -271,3 +271,37 @@ pre.json { background: var(--cor-campo); border-radius: var(--raio); padding: 8p
 .central-links a:hover { background: var(--gc-navy-50); border-color: var(--gc-navy-200); color: var(--gc-navy); }
 .central-links a i { color: var(--gc-navy); }
 @media (min-width: 900px) { .centrais { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+
+/* Gestão de acessos */
+.barra-permissoes { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+.lista-permissoes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lista-permissoes li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--cor-linha); border-radius: var(--raio); background: var(--cor-painel); }
+.lista-permissoes li.negada { background: var(--cor-fundo); color: var(--cor-texto-suave); }
+.numero-permissao { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--cor-primaria); min-width: 40px; }
+.nome-permissao { flex: 1; display: flex; flex-direction: column; font-size: 13px; }
+.nome-permissao small { color: var(--cor-texto-suave); font-size: 11px; }
+.pilula { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--gc-navy-50); color: var(--cor-primaria); }
+.pilula.ativo { background: var(--cor-ok); color: var(--gc-panel); }
+.pilula.inativo { background: var(--cor-linha); color: var(--cor-texto-suave); }
+.pilula.aviso { background: var(--cor-destaque); color: var(--cor-titulo); }
+.pilula.erro { background: var(--cor-erro); color: var(--gc-panel); }
+.cartoes-acesso { display: none; }
+.cartao-acesso { border: 1px solid var(--cor-linha); border-radius: var(--raio); padding: 12px; background: var(--cor-painel); display: flex; flex-direction: column; gap: 6px; }
+.cartao-acesso .topo-cartao { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.cartao-acesso .topo-cartao strong { font-size: 14px; color: var(--cor-titulo); }
+.cartao-acesso .linha-cartao { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--cor-texto-suave); }
+.modulo-permissoes { border: 1px solid var(--cor-linha); border-radius: var(--raio); padding: 10px 12px; margin-bottom: 10px; }
+.modulo-permissoes h3 { margin: 0 0 8px; font-size: 13px; color: var(--cor-titulo); display: flex; justify-content: space-between; align-items: center; }
+.grade-permissoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 12px; }
+.grade-permissoes label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.perfis-layout { display: grid; grid-template-columns: 280px 1fr; gap: 12px; align-items: start; }
+.lista-perfis { display: flex; flex-direction: column; gap: 6px; }
+.lista-perfis button { text-align: left; border: 1px solid var(--cor-linha); background: var(--cor-painel); border-radius: var(--raio); padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; color: var(--cor-texto); font: inherit; }
+.lista-perfis button.selecionado { border-color: var(--cor-primaria); box-shadow: inset 3px 0 0 var(--cor-primaria); }
+.lista-perfis button small { color: var(--cor-texto-suave); font-size: 12px; }
+.troca-senha { max-width: 420px; margin: 24px auto; }
+@media (max-width: 760px) {
+  .tabela-acesso { display: none; }
+  .cartoes-acesso { display: flex; flex-direction: column; gap: 8px; }
+  .perfis-layout { grid-template-columns: 1fr; }
+}

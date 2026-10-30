@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '../api'
-import { isAdmin, sessao } from '../sessao'
+import { pode, sessao } from '../sessao'
 import { CENTRAIS, menuItens } from '../menu'
 import { diaSemana, fmtData, fmtPct, hoje, nivelOcupacao } from '../utils'
 import { useNotificar } from '../composables/useNotificar'
@@ -14,7 +14,7 @@ const notificar = useNotificar()
 const d = ref(null)
 const carregando = ref(false)
 let timer
-const centrais = computed(() => menuItens(isAdmin.value).map((g) => ({ ...g, ...CENTRAIS[g.grupo] })))
+const centrais = computed(() => menuItens().map((g) => ({ ...g, ...CENTRAIS[g.grupo] })))
 const aberta = ref(null)
 const alternar = (g) => { aberta.value = aberta.value === g ? null : g }
 
@@ -65,7 +65,7 @@ onUnmounted(() => clearInterval(timer))
     <h1><span class="eyebrow">Painel</span>Recebimento · {{ fmtData(hoje()) }}</h1>
     <div class="acoes">
       <Button icon="pi pi-refresh" class="btn-secundario" aria-label="Atualizar" :loading="carregando" @click="carregar" />
-      <Button v-if="isAdmin" label="Novo agendamento" icon="pi pi-plus" class="btn-confirmar" @click="router.push('/agendamentos/novo')" />
+      <Button v-if="pode(1103)" label="Novo agendamento" icon="pi pi-plus" class="btn-confirmar" @click="router.push('/agendamentos/novo')" />
     </div>
   </div>
 

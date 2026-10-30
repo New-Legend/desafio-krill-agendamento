@@ -10,7 +10,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,13 +43,11 @@ public class PatioController {
 
     @PostMapping("/docas")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public Doca criarDoca(@Valid @RequestBody Requisicoes.Doca b, HttpServletRequest req) {
         return useCase.salvarDoca(null, dados(b), Requisicao.solicitante(req));
     }
 
     @PutMapping("/docas/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public Doca alterarDoca(@PathVariable Long id, @Valid @RequestBody Requisicoes.Doca b, HttpServletRequest req) {
         return useCase.salvarDoca(id, dados(b), Requisicao.solicitante(req));
     }
@@ -63,7 +60,6 @@ public class PatioController {
     }
 
     @PutMapping("/agendamentos/{id}/doca")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Atribui a doca ao caminhão que chegou (docaId nulo libera a doca)")
     public LogisticaAgendamento atribuirDoca(@PathVariable Long id, @RequestBody Requisicoes.AtribuirDoca b, HttpServletRequest req) {
         return useCase.atribuirDoca(id, b.docaId(), Requisicao.solicitante(req));
@@ -75,7 +71,6 @@ public class PatioController {
     }
 
     @PutMapping("/agendamentos/{id}/logistica")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Loja (entrega direta), transportadora e modal de descarga; devolve alertas de capacidade do destino")
     public LogisticaResp alterarLogistica(@PathVariable Long id, @Valid @RequestBody Requisicoes.Logistica b, HttpServletRequest req) {
         List<String> alertas = useCase.registrarLogistica(id, b.loja(), b.transportadora(), b.modalDescarga(), Requisicao.solicitante(req));

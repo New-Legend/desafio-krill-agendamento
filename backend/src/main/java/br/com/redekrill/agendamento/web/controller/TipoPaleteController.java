@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,13 +39,11 @@ public class TipoPaleteController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public TipoPalete criar(@Valid @RequestBody Requisicoes.TipoPalete b, HttpServletRequest req) {
         return useCase.criar(dados(b), Requisicao.solicitante(req));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Altera nome, valor de reposição, ordem e situação (o código não muda)")
     public TipoPalete atualizar(@PathVariable Long id, @Valid @RequestBody Requisicoes.TipoPalete b, HttpServletRequest req) {
         return useCase.atualizar(id, dados(b), Requisicao.solicitante(req));
@@ -54,7 +51,6 @@ public class TipoPaleteController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Exclui tipo nunca usado (usado deve ser inativado)")
     public void excluir(@PathVariable Long id, HttpServletRequest req) {
         useCase.excluir(id, Requisicao.solicitante(req));

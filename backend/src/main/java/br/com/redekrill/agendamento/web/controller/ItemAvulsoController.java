@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,7 +40,6 @@ public class ItemAvulsoController {
 
     @PostMapping("/agendamentos/{id}/itens-avulsos")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Lança produto avulso (fora da NF-e) na conferência; pode cadastrar o produto no catálogo")
     public ItemAvulso adicionar(@PathVariable Long id, @Valid @RequestBody Requisicoes.ItemAvulso b, HttpServletRequest req) {
         return useCase.adicionar(id, new ItemAvulsoUseCase.Dados(b.produtoId(), b.codigo(), b.descricao(), b.quantidade(),

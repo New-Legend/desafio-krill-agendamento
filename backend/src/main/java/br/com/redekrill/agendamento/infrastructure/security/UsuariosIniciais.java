@@ -1,47 +1,44 @@
 package br.com.redekrill.agendamento.infrastructure.security;
 
-import br.com.redekrill.agendamento.domain.model.Perfil;
+import br.com.redekrill.agendamento.application.port.CodificadorSenha;
+import br.com.redekrill.agendamento.application.port.PerfilAcessoRepositorio;
+import br.com.redekrill.agendamento.application.port.UsuarioRepositorio;
+import br.com.redekrill.agendamento.domain.model.UsuarioSistema;
 import br.com.redekrill.agendamento.infrastructure.config.AppProperties;
-import br.com.redekrill.agendamento.infrastructure.persistence.entity.UsuarioEntity;
-import br.com.redekrill.agendamento.infrastructure.persistence.jpa.UsuarioJpa;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-/** Cria os usuários padrão (admin / usuario) na primeira inicialização. */
+/** Cria os usuários padrão (admin no perfil Administrador, usuario no perfil Consulta) na primeira inicialização. */
 @Component
 public class UsuariosIniciais implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(UsuariosIniciais.class);
 
-    private final UsuarioJpa usuarios;
-    private final PasswordEncoder encoder;
+    private final UsuarioRepositorio usuarios;
+    private final PerfilAcessoRepositorio perfis;
+    private final CodificadorSenha senhas;
     private final AppProperties props;
 
-    public UsuariosIniciais(UsuarioJpa usuarios, PasswordEncoder encoder, AppProperties props) {
+    public UsuariosIniciais(UsuarioRepositorio usuarios, PerfilAcessoRepositorio perfis, CodificadorSenha senhas, AppProperties props) {
         this.usuarios = usuarios;
-        this.encoder = encoder;
+        this.perfis = perfis;
+        this.senhas = senhas;
         this.props = props;
     }
 
     @Override
     public void run(ApplicationArguments args) {
-        criar("admin", "Administrador", props.usuariosIniciais().adminSenha(), Perfil.ADMIN);
-        criar("usuario", "Usuário Comum", props.usuariosIniciais().usuarioSenha(), Perfil.USUARIO);
+        criar("admin", "Administrador", props.usuariosIniciais().adminSenha(), "Administrador");
+        criar("usuario", "Usuário Comum", props.usuariosIniciais().usuarioSenha(), "Consulta");
     }
 
-    private void criar(String username, String nome, String senha, Perfil perfil) {
-        if (usuarios.findByUsernameIgnoreCase(username).isPresent()) return;
-        UsuarioEntity u = new UsuarioEntity();
-        u.username = username;
-        u.nome = nome;
-        u.senhaHash = encoder.encode(senha);
-        u.perfil = perfil;
-        u.ativo = true;
-        usuarios.save(u);
-        log.info("Usuário inicial '{}' criado com perfil {}", username, perfil);
+    private void criar(String login, String nome, String senha, String perfil) {
+        if (usuarios.buscarPorLogin(login).isPresent()) return;
+        Long perfilId = perfis.buscarPorNome(perfil).orElseThrow().id();
+        usuarios.salvar(new UsuarioSistema(null, login, nome, perfilId, null, true, false, null, null, senhas.codificar(senha)));
+        log.info("Usuário inicial '{}' criado com perfil {}", login, perfil);
     }
 }

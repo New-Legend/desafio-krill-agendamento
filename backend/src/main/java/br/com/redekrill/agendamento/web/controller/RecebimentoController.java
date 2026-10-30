@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,7 +44,6 @@ public class RecebimentoController {
     }
 
     @PatchMapping("/agendamentos/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Avança o fluxo: CONFIRMAR, CHEGADA (portaria), INICIAR (conferência), CONCLUIR ou NAO_COMPARECEU")
     public AgendamentoResp acao(@PathVariable Long id, @Valid @RequestBody Requisicoes.AcaoRecebimento b, HttpServletRequest req) {
         return AgendamentoResp.de(recebimento.executar(id, new RecebimentoUseCase.Comando(b.acao(), b.placa(), b.motorista(),
@@ -53,7 +51,6 @@ public class RecebimentoController {
     }
 
     @PostMapping("/agendamentos/{id}/link-fornecedor")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Gera novo link público para o fornecedor (invalida o anterior)")
     public Map<String, String> novoLink(@PathVariable Long id, HttpServletRequest req) {
         return Map.of("linkFornecedor", agendamentos.gerarNovoLinkFornecedor(id, Requisicao.solicitante(req)));

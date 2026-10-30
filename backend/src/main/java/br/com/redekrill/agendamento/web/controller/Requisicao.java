@@ -13,6 +13,10 @@ final class Requisicao {
         return req.getRemoteAddr();
     }
 
+    static br.com.redekrill.agendamento.application.usecase.AcessoUseCase.Origem origem(HttpServletRequest req) {
+        return new br.com.redekrill.agendamento.application.usecase.AcessoUseCase.Origem(ip(req), req.getHeader("User-Agent"));
+    }
+
     static Solicitante solicitante(HttpServletRequest req) {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         return new Solicitante(auth == null ? "anonimo" : auth.getName(), ip(req));

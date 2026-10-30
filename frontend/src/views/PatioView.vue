@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { api } from '../api'
 import { deIso, diaSemana, fmtData, fmtMoeda, hoje, isoData } from '../utils'
-import { isAdmin } from '../sessao'
+import { pode } from '../sessao'
 import { useNotificar } from '../composables/useNotificar'
 import { useEnvio } from '../composables/useEnvio'
 import SeletorCd from '../components/SeletorCd.vue'
@@ -110,7 +110,7 @@ onUnmounted(() => clearInterval(timer))
           <div class="linha suave">{{ k.tipoCaminhao }} · {{ k.paletes }} paletes<span v-if="k.chegadaEm"> · chegou {{ hora(k.chegadaEm) }}</span></div>
           <div v-if="k.taxaDescarga != null" class="linha suave">Descarga {{ k.modal }}: {{ fmtMoeda(k.taxaDescarga) }}</div>
           <div v-if="k.doca" class="linha"><Tag :value="k.doca" /></div>
-          <div v-if="isAdmin && ['AGUARDANDO', 'NA_DOCA', 'DESCARREGANDO'].includes(c.chave)" class="acoes-cartao">
+          <div v-if="pode(1206) && ['AGUARDANDO', 'NA_DOCA', 'DESCARREGANDO'].includes(c.chave)" class="acoes-cartao">
             <Select v-if="!k.docaId" :options="docasLivres" option-label="label" option-value="value" placeholder="Atribuir doca"
                     :disabled="enviando || !docasLivres.length" :aria-label="`Atribuir doca ao agendamento ${k.agendamentoId}`" @change="(e) => atribuir(k, e.value)" />
             <Button v-else label="Liberar doca" icon="pi pi-sign-out" class="btn-secundario" size="small" :disabled="enviando" @click="atribuir(k, null)" />

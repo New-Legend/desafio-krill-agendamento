@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api'
-import { isAdmin } from '../sessao'
+import { pode } from '../sessao'
 import { deIso, fmtData, fmtDataHora, hoje, isoData, somarDias } from '../utils'
 import { useEnvio } from '../composables/useEnvio'
 import { useNotificar } from '../composables/useNotificar'
@@ -192,7 +192,7 @@ onMounted(() => {
   <div class="cabecalho">
     <h1>Agendamentos</h1>
     <div class="acoes">
-      <Button v-if="isAdmin" label="Novo agendamento" icon="pi pi-plus" class="btn-confirmar" @click="router.push('/agendamentos/novo')" />
+      <Button v-if="pode(1103)" label="Novo agendamento" icon="pi pi-plus" class="btn-confirmar" @click="router.push('/agendamentos/novo')" />
     </div>
   </div>
 
@@ -258,8 +258,8 @@ onMounted(() => {
           <Button label="Remarcar" icon="pi pi-calendar" class="btn-confirmar" :loading="enviando" :disabled="enviando || !novoHorario" @click="confirmarRemarcacao" />
         </div>
       </div>
-      <NotasFiscais v-if="['CHEGOU', 'EM_RECEBIMENTO', 'RECEBIDO'].includes(detalhe.status)" :key="detalhe.id" :agendamento-id="detalhe.id" :admin="isAdmin" :concluido="detalhe.status === 'RECEBIDO'" />
-      <ItensAvulsos v-if="['CHEGOU', 'EM_RECEBIMENTO', 'RECEBIDO'].includes(detalhe.status)" :key="`avulso-${detalhe.id}`" :agendamento-id="detalhe.id" :admin="isAdmin" />
+      <NotasFiscais v-if="['CHEGOU', 'EM_RECEBIMENTO', 'RECEBIDO'].includes(detalhe.status)" :key="detalhe.id" :agendamento-id="detalhe.id" :admin="pode(1207)" :concluido="detalhe.status === 'RECEBIDO'" />
+      <ItensAvulsos v-if="['CHEGOU', 'EM_RECEBIMENTO', 'RECEBIDO'].includes(detalhe.status)" :key="`avulso-${detalhe.id}`" :agendamento-id="detalhe.id" :admin="pode(1207)" />
       <div v-if="link" class="link-fornecedor">
         <label for="lk">Link do fornecedor</label>
         <InputText id="lk" :model-value="link" readonly @focus="$event.target.select()" />
@@ -293,14 +293,14 @@ onMounted(() => {
       </div>
     </template>
     <template #footer>
-      <template v-if="detalhe && isAdmin && !acao && !cancelando && !remarcando">
-        <Button v-for="a in acoes" :key="a.k" :label="a.label" :icon="a.icon" :class="a.excluir ? 'btn-excluir' : 'btn-confirmar'" @click="prepararAcao(a.k)" />
-        <Button v-if="podeRemarcar" label="Remarcar" icon="pi pi-calendar" class="btn-secundario" @click="abrirRemarcar" />
-        <Button v-if="['AGENDADO', 'CONFIRMADO'].includes(detalhe.status)" label="Link do fornecedor" icon="pi pi-link" class="btn-secundario" :disabled="enviando" @click="gerarLink" />
-        <WhatsAppAviso v-if="['AGENDADO', 'CONFIRMADO'].includes(detalhe.status)" documento="agendamentos" :id="detalhe.id" :admin="isAdmin" />
-        <Button v-if="['CHEGOU', 'EM_RECEBIMENTO', 'RECEBIDO'].includes(detalhe.status)" label="Emitir vale-palete" icon="pi pi-ticket" class="btn-secundario" @click="router.push({ path: '/vales-palete/novo', query: { agendamento: detalhe.id } })" />
+      <template v-if="detalhe && !acao && !cancelando && !remarcando">
+        <Button v-for="a in (pode(1204) ? acoes : [])" :key="a.k" :label="a.label" :icon="a.icon" :class="a.excluir ? 'btn-excluir' : 'btn-confirmar'" @click="prepararAcao(a.k)" />
+        <Button v-if="podeRemarcar && pode(1104)" label="Remarcar" icon="pi pi-calendar" class="btn-secundario" @click="abrirRemarcar" />
+        <Button v-if="pode(1105) && ['AGENDADO', 'CONFIRMADO'].includes(detalhe.status)" label="Link do fornecedor" icon="pi pi-link" class="btn-secundario" :disabled="enviando" @click="gerarLink" />
+        <WhatsAppAviso v-if="['AGENDADO', 'CONFIRMADO'].includes(detalhe.status)" documento="agendamentos" :id="detalhe.id" :admin="pode(1105)" />
+        <Button v-if="pode(1302) && ['CHEGOU', 'EM_RECEBIMENTO', 'RECEBIDO'].includes(detalhe.status)" label="Emitir vale-palete" icon="pi pi-ticket" class="btn-secundario" @click="router.push({ path: '/vales-palete/novo', query: { agendamento: detalhe.id } })" />
       </template>
-      <template v-if="detalhe && isAdmin && podeCancelar && !acao && !remarcando">
+      <template v-if="detalhe && pode(1104) && podeCancelar && !acao && !remarcando">
         <template v-if="cancelando">
           <Button label="Voltar" class="btn-secundario" :disabled="enviando" @click="cancelando = false" />
           <Button label="Confirmar cancelamento" icon="pi pi-times" class="btn-excluir" :loading="enviando" :disabled="enviando" @click="confirmarCancelamento" />

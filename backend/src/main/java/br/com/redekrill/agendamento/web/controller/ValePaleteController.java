@@ -10,7 +10,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -58,7 +57,6 @@ public class ValePaleteController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public ValePaleteResp emitir(@Valid @RequestBody Requisicoes.NovoVale b, HttpServletRequest req) {
         return ValePaleteResp.de(useCase.emitir(new ValePaleteUseCase.NovoVale(b.agendamentoId(), b.data(), b.fornecedor(),
                 b.placa(), b.motorista(), new ValePalete.Quantidades(b.quantidades()),
@@ -66,7 +64,6 @@ public class ValePaleteController {
     }
 
     @PutMapping("/{id}/assinaturas/{quem}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Grava assinatura do MOTORISTA ou CONFERENTE")
     public ValePaleteResp assinar(@PathVariable Long id, @PathVariable ValePalete.Assinante quem,
                                   @Valid @RequestBody Requisicoes.Assinatura b, HttpServletRequest req) {
@@ -74,14 +71,12 @@ public class ValePaleteController {
     }
 
     @DeleteMapping("/{id}/assinaturas/{quem}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Refazer assinatura")
     public ValePaleteResp refazer(@PathVariable Long id, @PathVariable ValePalete.Assinante quem, HttpServletRequest req) {
         return ValePaleteResp.de(useCase.refazerAssinatura(id, quem, Requisicao.solicitante(req)));
     }
 
     @PostMapping("/{id}/devolucoes")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Registra devolução de paletes (total quita o vale)")
     public ValePaleteResp devolver(@PathVariable Long id, @Valid @RequestBody Requisicoes.Devolucao b, HttpServletRequest req) {
         return ValePaleteResp.de(useCase.registrarDevolucao(id,
@@ -89,7 +84,6 @@ public class ValePaleteController {
     }
 
     @PatchMapping("/{id}/cancelamento")
-    @PreAuthorize("hasRole('ADMIN')")
     public ValePaleteResp cancelar(@PathVariable Long id, HttpServletRequest req) {
         return ValePaleteResp.de(useCase.cancelar(id, Requisicao.solicitante(req)));
     }

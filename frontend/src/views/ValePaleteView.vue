@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api'
-import { isAdmin } from '../sessao'
+import { pode } from '../sessao'
 import { deIso, fmtData, fmtDataHora, hoje, isoData } from '../utils'
 import { useEnvio } from '../composables/useEnvio'
 import { useNotificar } from '../composables/useNotificar'
@@ -187,7 +187,7 @@ onMounted(carregar)
           <div v-else class="linha-vazia" />
           <span>{{ ass ? ass.nome : rotulo }}</span>
           <small class="texto-suave">{{ ass ? `${rotulo} · ${fmtDataHora(ass.em)}` : 'assinatura' }}</small>
-          <template v-if="isAdmin && vale.status !== 'CANCELADO' && vale.status !== 'QUITADO'">
+          <template v-if="pode(1303) && vale.status !== 'CANCELADO' && vale.status !== 'QUITADO'">
             <Button v-if="!ass" label="Assinar" icon="pi pi-pencil" size="small" class="btn-confirmar nao-imprimir" @click="abrirAssinatura(quem)" />
             <Button v-else label="Refazer" icon="pi pi-replay" size="small" text class="nao-imprimir" :disabled="enviando" @click="refazer(quem)" />
           </template>
@@ -195,7 +195,7 @@ onMounted(carregar)
       </div>
     </article>
 
-    <section v-if="isAdmin && ['PENDENTE', 'ASSINADO'].includes(vale.status)" class="painel nao-imprimir">
+    <section v-if="pode(1303) && ['PENDENTE', 'ASSINADO'].includes(vale.status)" class="painel nao-imprimir">
       <h2>Registrar devolução</h2>
       <form class="form-grade" @submit.prevent="devolver">
         <div v-for="k in tiposVale" :key="k" class="campo c2"><label :for="`d-${k}`">{{ tiposPalete.rotulo(k) }}</label><InputNumber v-model="dev[k]" :input-id="`d-${k}`" :min="0" :max="vale.saldo[k] || 0" /></div>

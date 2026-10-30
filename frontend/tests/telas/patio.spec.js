@@ -46,7 +46,7 @@ describe('pátio e docas', () => {
   })
 
   it('menu traz pátio e os novos cadastros', () => {
-    const tudo = menuItens(true).flatMap((g) => g.itens.map((i) => i.to))
+    const tudo = menuItens(() => true).flatMap((g) => g.itens.map((i) => i.to))
     expect(tudo).toEqual(expect.arrayContaining(['/patio', '/cadastros/docas', '/cadastros/capacidade-recebimento', '/cadastros/taxas-descarga']))
   })
 })

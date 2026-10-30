@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api'
-import { isAdmin } from '../sessao'
+import { pode } from '../sessao'
 import { deIso, diaSemana, fmtData, fmtPct, hoje, isoData, nivelOcupacao, somarDias } from '../utils'
 import { useNotificar } from '../composables/useNotificar'
 import BarraOcupacao from '../components/BarraOcupacao.vue'
@@ -62,7 +62,7 @@ onMounted(carregar)
       <DatePicker v-model="datePicker" date-format="dd/mm/yy" show-icon icon-display="input" :manual-input="false" />
       <Button icon="pi pi-angle-right" class="btn-secundario" aria-label="Próxima semana" @click="navegar(7)" />
       <Button label="Hoje" class="btn-secundario" @click="selecionar(hoje(), true)" />
-      <Button v-if="isAdmin" label="Novo agendamento" icon="pi pi-plus" class="btn-confirmar" @click="router.push({ name: 'novo', query: { data: dataSel } })" />
+      <Button v-if="pode(1103)" label="Novo agendamento" icon="pi pi-plus" class="btn-confirmar" @click="router.push({ name: 'novo', query: { data: dataSel } })" />
     </div>
   </div>
 

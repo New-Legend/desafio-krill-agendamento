@@ -10,7 +10,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,20 +41,17 @@ public class CapacidadeRecebimentoController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public CapacidadeRecebimento criar(@Valid @RequestBody Requisicoes.CapacidadeRecebimento b, HttpServletRequest req) {
         return useCase.salvar(null, dados(b), Requisicao.solicitante(req));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public CapacidadeRecebimento alterar(@PathVariable Long id, @Valid @RequestBody Requisicoes.CapacidadeRecebimento b, HttpServletRequest req) {
         return useCase.salvar(id, dados(b), Requisicao.solicitante(req));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMIN')")
     public void excluir(@PathVariable Long id, HttpServletRequest req) {
         useCase.excluir(id, Requisicao.solicitante(req));
     }

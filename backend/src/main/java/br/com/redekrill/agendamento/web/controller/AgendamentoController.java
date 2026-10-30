@@ -23,7 +23,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -60,7 +59,6 @@ public class AgendamentoController {
 
     @PostMapping("/agendamentos")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cria agendamento (não bloqueia por capacidade; devolve alertas)")
     public CriacaoResp criar(@Valid @RequestBody Requisicoes.CriarAgendamento b, HttpServletRequest req) {
         ResultadoAgendamento r = useCase.criar(new NovoAgendamento(b.data(), b.faixaHorariaId(), b.idPedido(),
@@ -91,7 +89,6 @@ public class AgendamentoController {
     }
 
     @PatchMapping("/agendamentos/{id}/cancelamento")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cancela um agendamento (libera a capacidade)")
     public AgendamentoResp cancelar(@PathVariable Long id, @Valid @RequestBody Requisicoes.Cancelar b,
                                     HttpServletRequest req) {
@@ -99,7 +96,6 @@ public class AgendamentoController {
     }
 
     @PatchMapping("/agendamentos/{id}/data")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Remarca data/faixa (o CD pode exceder a capacidade; devolve alertas)")
     public CriacaoResp reagendar(@PathVariable Long id, @Valid @RequestBody Requisicoes.Reagendar b, HttpServletRequest req) {
         ResultadoAgendamento r = useCase.reagendar(id, b.data(), b.faixaHorariaId(), Requisicao.solicitante(req), true);

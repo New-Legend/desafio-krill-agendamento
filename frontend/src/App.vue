@@ -1,7 +1,9 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { sessao, isAdmin, encerrarSessao } from './sessao'
+import { sessao, pode, logado, encerrarSessao, atualizarSessao } from './sessao'
+import { api } from './api'
+import BotaoPermissoes from './components/BotaoPermissoes.vue'
 import { ativarPush, desativarPush, inscricaoAtual, pushSuportado } from './push'
 import { useNotificar } from './composables/useNotificar'
 import { menuItens } from './menu'
@@ -14,7 +16,7 @@ const online = ref(navigator.onLine)
 const pushAtivo = ref(false)
 const mostrarTopo = computed(() => !route.meta.publica)
 
-const itens = computed(() => menuItens(isAdmin.value))
+const itens = computed(() => menuItens())
 const itensPlanos = computed(() => itens.value.flatMap((g) => g.itens))
 
 const atualizarRede = () => { online.value = navigator.onLine }
@@ -22,6 +24,7 @@ onMounted(async () => {
   window.addEventListener('online', atualizarRede)
   window.addEventListener('offline', atualizarRede)
   pushAtivo.value = !!(await inscricaoAtual().catch(() => null))
+  if (logado.value) api('/auth/eu').then(atualizarSessao).catch(() => {})
 })
 onUnmounted(() => {
   window.removeEventListener('online', atualizarRede)
@@ -44,7 +47,8 @@ async function alternarPush() {
   }
 }
 
-function sair() {
+async function sair() {
+  await api('/auth/logout', { method: 'POST' }).catch(() => {})
   encerrarSessao()
   router.push({ name: 'login' })
 }
@@ -60,8 +64,8 @@ function sair() {
         <span>Gestão CD <small>· Recebimento</small></span>
       </RouterLink>
       <nav class="menu">
-        <RouterLink v-for="i in itens[0].itens" :key="i.to" :to="i.to">{{ i.label }}</RouterLink>
-        <RouterLink to="/rotina">Rotina</RouterLink>
+        <RouterLink v-for="i in itens[0]?.itens || []" :key="i.to" :to="i.to">{{ i.label }}</RouterLink>
+        <RouterLink v-if="pode(1201)" to="/rotina">Rotina</RouterLink>
       </nav>
       <div class="espaco" />
       <div class="usuario">
@@ -75,7 +79,8 @@ function sair() {
           <i :class="pushAtivo ? 'pi pi-bell' : 'pi pi-bell-slash'" />
         </button>
         <span class="nome">{{ sessao.atual?.nome }}</span>
-        <span class="perfil">{{ sessao.atual?.perfil === 'ADMIN' ? 'Administrador' : 'Usuário' }}</span>
+        <span class="perfil">{{ sessao.atual?.perfil }}</span>
+        <RouterLink class="btn-topo" to="/trocar-senha" title="Trocar senha" aria-label="Trocar senha"><i class="pi pi-lock" /></RouterLink>
         <button class="btn-topo" title="Sair" @click="sair"><i class="pi pi-sign-out" /></button>
       </div>
     </header>
@@ -89,6 +94,7 @@ function sair() {
       </nav>
     </Drawer>
     <main class="conteudo">
+      <div v-if="route.name && !route.meta.semPermissoes" class="barra-permissoes"><BotaoPermissoes :tela="route.name" /></div>
       <RouterView />
     </main>
   </template>

@@ -21,8 +21,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * API stateless com JWT. Perfis: ADMIN (acesso total) e USUARIO (somente leitura).
- * As regras por URL são reforçadas com @PreAuthorize nos controllers.
+ * API stateless com JWT. Cada requisição recebe como authorities as permissões numeradas do perfil
+ * do usuário (PERM_1103...), lidas do banco; a tabela rota → permissão fica em {@link RegrasAcesso}.
  */
 @Configuration
 @EnableMethodSecurity
@@ -38,16 +38,21 @@ public class SecurityConfig {
                         .accessDeniedHandler((req, res, ex) -> res.setStatus(HttpStatus.FORBIDDEN.value())))
                 .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives(
                         "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:")))
-                .authorizeHttpRequests(a -> a
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
-                        .requestMatchers("/error", "/actuator/health", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/push/chave-publica").permitAll()
-                        .requestMatchers("/api/v1/publico/**").permitAll()
-                        .requestMatchers("/api/v1/auditoria/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/**").hasAnyRole("ADMIN", "USUARIO")
-                        .requestMatchers("/api/v1/push/**", "/api/v1/agendamentos/simulacao").hasAnyRole("ADMIN", "USUARIO")
-                        .requestMatchers("/api/v1/**").hasRole("ADMIN")
-                        .anyRequest().denyAll())
+                .authorizeHttpRequests(a -> {
+                    a.requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+                            .requestMatchers("/error", "/actuator/health", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/api/v1/push/chave-publica").permitAll()
+                            .requestMatchers("/api/v1/publico/**").permitAll();
+                    RegrasAcesso.REGRAS.stream().filter(r -> r.metodo() == HttpMethod.GET)
+                            .forEach(r -> a.requestMatchers(HttpMethod.GET, r.caminho()).hasAnyAuthority(r.authorities()));
+                    a.requestMatchers(HttpMethod.GET, "/api/v1/**").authenticated()
+                            .requestMatchers("/api/v1/auth/**", "/api/v1/push/**", "/api/v1/agendamentos/simulacao").authenticated();
+                    RegrasAcesso.REGRAS.stream().filter(r -> r.metodo() != HttpMethod.GET).forEach(r -> {
+                        if (r.metodo() == null) a.requestMatchers(r.caminho()).hasAnyAuthority(r.authorities());
+                        else a.requestMatchers(r.metodo(), r.caminho()).hasAnyAuthority(r.authorities());
+                    });
+                    a.anyRequest().denyAll();
+                })
                 .addFilterBefore(jwtFiltro, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

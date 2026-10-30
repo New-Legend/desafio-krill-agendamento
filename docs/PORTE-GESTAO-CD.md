@@ -18,7 +18,7 @@ Legenda: ✅ portado · 🟡 portado em parte / adaptado · ⏳ pendente · 🔮
 | Remarcação pelo CD | Trocar data/faixa | ✅ | Detalhe → "Remarcar" (mesma grade; avisa o fornecedor por push e registra na auditoria) |
 | Multi-CD | Mais de um centro de distribuição | ✅ | Cadastros → Centros de distribuição. Cada CD pode ter capacidade própria por dia e por faixa; vazio = 480/120. O CD 1 é o do desafio e não pode ser inativado. Seletor de CD em novo agendamento, lista, divergências, descarga e rotina (aparece só quando há mais de um CD) |
 | Capacidade (migração 0159) | 480/dia, faixas, fator não paletizado | ✅ | Cadastros de capacidade, faixas, caminhões e paletização |
-| Histórico do agendamento (0125) | Quem fez o quê | ✅ | Auditoria (ADMIN) com usuário, data/hora, ação, entidade, IP e detalhes JSON |
+| Histórico do agendamento (0125) | Quem fez o quê | ✅ | Auditoria (permissão 1005) com usuário, data/hora, ação, entidade, IP e detalhes JSON |
 
 ## Recebimento operacional
 
@@ -52,9 +52,21 @@ Legenda: ✅ portado · 🟡 portado em parte / adaptado · ⏳ pendente · 🔮
 | Devolução / saldo | Baixa de paletes devolvidos | ✅ | Registrar devolução; quita sozinho quando o saldo zera |
 | Busca por código | Leitura do código VP | ✅ | Campo de código na lista (`VP-AAAAMMDD-NNNN`) |
 | `/vale-palete/conta-corrente` | Saldo por fornecedor | ✅ | Paletes → Conta-corrente: entregues − devolvidos − cobrados, valor a receber |
-| `/vale-palete/configuracoes` | Tipos de palete configuráveis | ✅ / 🟡 | Cadastros → **Tipos de palete** (ADMIN): código (imutável), nome, valor de reposição, ordem e situação. Semente: PBR, CHEP, Chapatex, Descartável. Vales e romaneios guardam `{CÓDIGO: quantidade}` (JSONB, migração V5 converte os dados antigos); novos só aceitam tipos ativos; tipo usado não pode ser excluído, só inativado; sempre fica ao menos um ativo. O valor de reposição sugere o preço na cobrança. Também da mesma tela: tipo **por CD** (vazio = todos os CDs), **exigir as duas assinaturas** (ligado, a devolução só é registrada depois de motorista e conferente assinarem; desligado por padrão) e **agrupar a conta-corrente por fornecedor ou transportadora** (aba "Por transportadora", usando a transportadora do agendamento; sem ela entra o fornecedor). As cobranças continuam por fornecedor |
+| `/vale-palete/configuracoes` | Tipos de palete configuráveis | ✅ / 🟡 | Cadastros → **Tipos de palete** (permissão 1410): código (imutável), nome, valor de reposição, ordem e situação. Semente: PBR, CHEP, Chapatex, Descartável. Vales e romaneios guardam `{CÓDIGO: quantidade}` (JSONB, migração V5 converte os dados antigos); novos só aceitam tipos ativos; tipo usado não pode ser excluído, só inativado; sempre fica ao menos um ativo. O valor de reposição sugere o preço na cobrança. Também da mesma tela: tipo **por CD** (vazio = todos os CDs), **exigir as duas assinaturas** (ligado, a devolução só é registrada depois de motorista e conferente assinarem; desligado por padrão) e **agrupar a conta-corrente por fornecedor ou transportadora** (aba "Por transportadora", usando a transportadora do agendamento; sem ela entra o fornecedor). As cobranças continuam por fornecedor |
 | `/paletes/cobranca`, `/pagar`, `/recibos`, `/email` | Cobrança de paletes e recibos | ✅ | Cobrar (limitado ao saldo), receber (PIX, boleto, dinheiro, desconto na NF, devolução física) com **recibo impresso** `RP-AAAAMMDD-NNNN` e logo, cancelar com motivo. **E-mail** da cobrança (ou do recibo, se paga) pelo SMTP do sistema (Mailpit no Docker), com template da Rede Krill, pré-visualização, destinatário sugerido (cadastro do fornecedor ou último agendamento) e **histórico de envios** (`notificacao_envio` + auditoria). Diferença: o Gestão CD anexa PDF e também envia o vale; aqui vai o HTML da cobrança/recibo |
 | `/paletes/retorno`, `/romaneios`, `/saldo-inicial`, `/movimentos`, `/rede` | Movimento entre lojas | ✅ | Paletes → Paletes nas lojas: romaneio `RM-AAAAMMDD-NNNN` de envio, retorno ou saldo inicial, por tipo de palete, e saldo por loja |
+
+## Acessos
+
+| Gestão CD | O que faz | Status | Como ficou aqui |
+|---|---|---|---|
+| `permissoes-numeros.ts` | Número fixo por permissão, por módulo | ✅ | `Permissao.java`: 1001–1005 Administração, 1101–1106 Operação, 1201–1207 Recebimento, 1301–1308 Paletes, 1401–1411 Cadastros |
+| `/usuarios/` | Lista, pílulas, último acesso, menu ⋮, modal | ✅ | Administração → **Usuários** (1001/1002): filtros por nome, perfil e situação; cartões no celular; senha provisória com troca obrigatória |
+| Perfis de acesso | Perfil = conjunto de permissões | ✅ | **Perfis e permissões** (1003), marcando por módulo. Semente: Administrador, Recebimento, Portaria, Consulta |
+| Botão de permissões da tela | Mostra os números usados | ✅ | Botão **Permissões** em cada tela, com liberada/sem acesso e atalho para o editor |
+| `logs-acesso.ts` | Entradas, saídas e senhas recusadas | ✅ | **Logs de acesso** (1004) com período, evento, IP e navegador resumido |
+| Push por permissão (`queuePushNotificationsForCd`) | Aviso só para quem tem a permissão | 🟡 | Filtra por 1102. Sem filtro por CD, sem fila/deduplicação e sem o resumo "Fornecedores não compareceram" |
+| Níveis acima do administrador | Acesso de suporte | ❌ | Não portado: o código é público |
 
 ## Visual
 

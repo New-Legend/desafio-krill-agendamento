@@ -1,48 +1,30 @@
 package br.com.redekrill.agendamento.infrastructure.security;
 
-import br.com.redekrill.agendamento.application.dto.Solicitante;
-import br.com.redekrill.agendamento.application.usecase.AuditoriaUseCase;
-import br.com.redekrill.agendamento.infrastructure.persistence.entity.UsuarioEntity;
-import br.com.redekrill.agendamento.infrastructure.persistence.jpa.UsuarioJpa;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import br.com.redekrill.agendamento.application.usecase.AcessoUseCase;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
+import java.util.List;
 
+/** Emite o JWT a partir do login validado no caso de uso. */
 @Service
 public class AutenticacaoService {
 
-    /** Hash para gastar o mesmo tempo quando o usuário não existe (evita enumeração por tempo). */
-    private final String hashFalso;
-
-    private final UsuarioJpa usuarios;
-    private final PasswordEncoder encoder;
+    private final AcessoUseCase acessos;
     private final JwtService jwt;
-    private final AuditoriaUseCase auditoria;
 
-    public AutenticacaoService(UsuarioJpa usuarios, PasswordEncoder encoder, JwtService jwt, AuditoriaUseCase auditoria) {
-        this.usuarios = usuarios;
-        this.encoder = encoder;
+    public AutenticacaoService(AcessoUseCase acessos, JwtService jwt) {
+        this.acessos = acessos;
         this.jwt = jwt;
-        this.auditoria = auditoria;
-        this.hashFalso = encoder.encode("usuario-inexistente");
     }
 
-    public Sessao autenticar(String username, String senha, String ip) {
-        String login = username == null ? "" : username.trim().toLowerCase();
-        UsuarioEntity u = usuarios.findByUsernameIgnoreCase(login).filter(x -> x.ativo).orElse(null);
-        boolean ok = encoder.matches(senha == null ? "" : senha, u == null ? hashFalso : u.senhaHash) && u != null;
-        if (!ok) {
-            auditoria.registrar(new Solicitante(login.isEmpty() ? "anonimo" : login, ip), "LOGIN_FALHA", "SESSAO",
-                    null, false, Map.of("motivo", "Credenciais inválidas"));
-            throw new BadCredentialsException("Usuário ou senha inválidos");
-        }
-        auditoria.registrar(new Solicitante(u.username, ip), "LOGIN", "SESSAO", u.id, Map.of("perfil", u.perfil.name()));
-        return new Sessao(jwt.gerar(u.username, u.nome, u.perfil.name()), u.username, u.nome, u.perfil.name(),
-                jwt.expiracaoSegundos());
+    public Sessao autenticar(String username, String senha, AcessoUseCase.Origem origem) {
+        var ctx = acessos.autenticar(username, senha, origem);
+        var u = ctx.usuario();
+        return new Sessao(jwt.gerar(u.login(), u.nome(), ctx.perfil().nome()), u.login(), u.nome(), ctx.perfil().nome(),
+                ctx.permissoes().stream().sorted().toList(), u.trocarSenha(), jwt.expiracaoSegundos());
     }
 
-    public record Sessao(String token, String usuario, String nome, String perfil, long expiraEmSegundos) {
+    public record Sessao(String token, String usuario, String nome, String perfil, List<Integer> permissoes,
+                         boolean trocarSenha, long expiraEmSegundos) {
     }
 }

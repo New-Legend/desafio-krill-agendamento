@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api'
-import { isAdmin } from '../sessao'
+import { pode } from '../sessao'
 import { deIso, fmtData, fmtDataHora, fmtMoeda, hoje, isoData, somarDias } from '../utils'
 import { useEnvio } from '../composables/useEnvio'
 import { useNotificar } from '../composables/useNotificar'
@@ -114,7 +114,7 @@ defineExpose({ abrir, confirmar, dlg, erro })
       <Column field="pagos" header="Pagos" class="num" />
       <Column header="Saldo em aberto" class="num" sortable sort-field="saldoEmAberto"><template #body="{ data }"><strong :class="data.saldoEmAberto > 0 ? 'erro' : ''">{{ data.saldoEmAberto }}</strong></template></Column>
       <Column header="A receber" class="num"><template #body="{ data }">{{ fmtMoeda(data.valorEmAberto) }}</template></Column>
-      <Column v-if="isAdmin" header=""><template #body="{ data }"><Button v-if="data.saldoEmAberto > 0" label="Cobrar" icon="pi pi-wallet" class="btn-confirmar" size="small" @click="abrir('cobrar', data)" /></template></Column>
+      <Column v-if="pode(1305)" header=""><template #body="{ data }"><Button v-if="data.saldoEmAberto > 0" label="Cobrar" icon="pi pi-wallet" class="btn-confirmar" size="small" @click="abrir('cobrar', data)" /></template></Column>
     </DataTable>
   </section>
 
@@ -145,9 +145,9 @@ defineExpose({ abrir, confirmar, dlg, erro })
       <Column header="Status"><template #body="{ data }"><Tag :value="STATUS[data.status][0]" :severity="STATUS[data.status][1]" /></template></Column>
       <Column header="Recibo"><template #body="{ data }"><a v-if="data.reciboNumero" href="#" @click.prevent="router.push(`/paletes/recibos/${data.id}`)">{{ data.reciboNumero }}</a><span v-else-if="data.pagoEm">{{ fmtDataHora(data.pagoEm) }}</span></template></Column>
       <Column header="Avisar"><template #body="{ data }">
-        <div v-if="data.status !== 'CANCELADA'" class="botoes-aviso"><EmailCobranca :cobranca-id="data.id" :admin="isAdmin" /><WhatsAppAviso documento="cobrancas" :id="data.id" :admin="isAdmin" /></div>
+        <div v-if="data.status !== 'CANCELADA'" class="botoes-aviso"><EmailCobranca :cobranca-id="data.id" :admin="pode(1306)" /><WhatsAppAviso documento="cobrancas" :id="data.id" :admin="pode(1306)" /></div>
       </template></Column>
-      <Column v-if="isAdmin" header=""><template #body="{ data }">
+      <Column v-if="pode(1305)" header=""><template #body="{ data }">
         <template v-if="data.status === 'ABERTA'">
           <Button label="Receber" icon="pi pi-check" class="btn-confirmar" size="small" @click="abrir('pagar', data)" />
           <Button icon="pi pi-times" class="btn-excluir" size="small" aria-label="Cancelar cobrança" @click="abrir('cancelar', data)" />

@@ -153,6 +153,85 @@ class ApiIntegracaoTest {
     }
 
     @Test
+    void gestaoDeAcessosComPermissoesNumeradas() throws Exception {
+        String admin = token("admin", "admin123");
+        String usuario = token("usuario", "usuario123");
+        var J = MediaType.APPLICATION_JSON;
+
+        mvc.perform(post("/api/v1/auth/login").contentType(J).content("{\"usuario\":\"admin\",\"senha\":\"admin123\"}"))
+                .andExpect(jsonPath("$.perfil").value("Administrador"))
+                .andExpect(jsonPath("$.permissoes[0]").value(1001))
+                .andExpect(jsonPath("$.trocarSenha").value(false));
+        mvc.perform(get("/api/v1/auth/eu").header("Authorization", usuario))
+                .andExpect(jsonPath("$.perfil").value("Consulta"))
+                .andExpect(jsonPath("$.permissoes", org.hamcrest.Matchers.hasItem(1102)));
+        mvc.perform(get("/api/v1/auth/permissoes").header("Authorization", usuario))
+                .andExpect(jsonPath("$[0].codigo").value(1001)).andExpect(jsonPath("$[0].telas[0]").value("usuarios"));
+
+        // Consulta não vê usuários nem logs
+        mvc.perform(get("/api/v1/usuarios").header("Authorization", usuario)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/logs-acesso").header("Authorization", usuario)).andExpect(status().isForbidden());
+
+        String perfis = mvc.perform(get("/api/v1/perfis").header("Authorization", admin)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long portaria = 0;
+        for (JsonNode p : json.readTree(perfis)) if (p.get("nome").asText().equals("Portaria")) portaria = p.get("id").asLong();
+        assertThat(json.readTree(perfis).findValuesAsText("nome")).contains("Administrador", "Recebimento", "Portaria", "Consulta");
+
+        String criado = mvc.perform(post("/api/v1/usuarios").header("Authorization", admin).contentType(J)
+                        .content("{\"login\":\"carlos.portaria\",\"nome\":\"Carlos Mendes\",\"perfilId\":" + portaria
+                                + ",\"senhaProvisoria\":\"Portaria2026\"}"))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.trocarSenha").value(true))
+                .andExpect(jsonPath("$.perfil").value("Portaria")).andReturn().getResponse().getContentAsString();
+        long carlosId = json.readTree(criado).get("id").asLong();
+
+        // troca obrigatória antes de usar o sistema
+        String carlos = token("carlos.portaria", "Portaria2026");
+        mvc.perform(get("/api/v1/agendamentos").header("Authorization", carlos)).andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.mensagem").value("Troque a senha provisória para continuar"));
+        mvc.perform(post("/api/v1/auth/senha").header("Authorization", carlos).contentType(J)
+                .content("{\"senhaAtual\":\"Portaria2026\",\"novaSenha\":\"curta\"}")).andExpect(status().isUnprocessableEntity());
+        mvc.perform(post("/api/v1/auth/senha").header("Authorization", carlos).contentType(J)
+                .content("{\"senhaAtual\":\"Portaria2026\",\"novaSenha\":\"Guarita2026\"}")).andExpect(status().isNoContent());
+        mvc.perform(get("/api/v1/agendamentos").header("Authorization", carlos)).andExpect(status().isOk());
+
+        // Portaria registra chegada (1204) mas não cria agendamento (1103) nem edita cadastro (1406)
+        mvc.perform(post("/api/v1/agendamentos").header("Authorization", carlos).contentType(J).content(agendamento(1, 1, 5)))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/api/v1/docas").header("Authorization", carlos).contentType(J).content("{\"codigo\":\"D9\"}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(patch("/api/v1/agendamentos/999999/status").header("Authorization", carlos).contentType(J)
+                .content("{\"acao\":\"CHEGADA\"}")).andExpect(status().isNotFound());
+
+        // perfil alterado vale na hora, sem novo login
+        mvc.perform(put("/api/v1/perfis/" + portaria).header("Authorization", admin).contentType(J)
+                        .content("{\"nome\":\"Portaria\",\"descricao\":\"Guarita\",\"permissoes\":[1102,1204,1103]}"))
+                .andExpect(status().isOk());
+        mvc.perform(post("/api/v1/agendamentos").header("Authorization", carlos).contentType(J).content(agendamento(1, 1, 5)))
+                .andExpect(status().isCreated());
+        mvc.perform(put("/api/v1/perfis/" + portaria).header("Authorization", usuario).contentType(J)
+                .content("{\"nome\":\"Portaria\",\"permissoes\":[]}")).andExpect(status().isForbidden());
+
+        // redefinir senha e inativar
+        mvc.perform(post("/api/v1/usuarios/" + carlosId + "/senha").header("Authorization", admin).contentType(J)
+                .content("{\"senhaProvisoria\":\"Redefinida2026\"}")).andExpect(status().isNoContent());
+        mvc.perform(put("/api/v1/usuarios/" + carlosId).header("Authorization", admin).contentType(J)
+                        .content("{\"nome\":\"Carlos Mendes\",\"perfilId\":" + portaria + ",\"ativo\":false}"))
+                .andExpect(jsonPath("$.ativo").value(false));
+        mvc.perform(get("/api/v1/agendamentos").header("Authorization", carlos)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/usuarios").param("texto", "carlos").header("Authorization", admin))
+                .andExpect(jsonPath("$[0].login").value("carlos.portaria"));
+
+        mvc.perform(post("/api/v1/auth/logout").header("Authorization", admin)).andExpect(status().isNoContent());
+        mvc.perform(get("/api/v1/logs-acesso").param("dias", "1").header("Authorization", admin)
+                        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0) Chrome/130"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].evento", org.hamcrest.Matchers.hasItems("ENTRADA", "SAIDA", "SENHA_TROCADA")));
+        mvc.perform(get("/api/v1/logs-acesso").param("evento", "SAIDA").header("Authorization", admin))
+                .andExpect(jsonPath("$[0].rotulo").value("Saiu do sistema"));
+    }
+
+    @Test
     void cadastros() throws Exception {
         String admin = token("admin", "admin123");
         mvc.perform(get("/api/v1/parametros/capacidade").header("Authorization", admin))

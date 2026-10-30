@@ -10,7 +10,7 @@ docker compose up --build
 ```
 
 - Pré-requisito: só Docker com Compose. Passo a passo e acesso pela rede no [README](../README.md#como-rodar).
-- Aplicação: http://localhost:8081. Login `admin` / `admin123` (ADMIN) ou `usuario` / `usuario123` (USUARIO).
+- Aplicação: http://localhost:8081. Login `admin` / `admin123` (perfil Administrador) ou `usuario` / `usuario123` (perfil Consulta).
 - Swagger: http://localhost:8080/swagger-ui/index.html
 - E-mails enviados (Mailpit): http://localhost:8025
 - Testes: `cd backend && mvn verify` e `cd frontend && npm run test:coverage`.
@@ -24,12 +24,12 @@ docker compose up --build
 | Agendamento com todos os campos validados e % de ocupação na data e na faixa | ✅ |
 | E-mail ao fornecedor (SMTP por variável de ambiente, Mailpit no compose) | ✅ |
 | Relatório por período + CSV | ✅ |
-| Perfis ADMIN / USUARIO garantidos no backend | ✅ |
+| Perfis garantidos no backend (agora com permissões numeradas por perfil) | ✅ |
 | Auditoria (quem, quando, ação, entidade, IP, inclusive login) | ✅ |
 | Java 17+ / Spring Boot 3 / JPA / Security JWT / Flyway / PostgreSQL / Swagger | ✅ |
 | Vue 3 + Vite + PrimeVue | ✅ |
 | Dockerfiles multi-stage, não-root, nginx + compose (db, api, web, mail) | ✅ |
-| JUnit 5, Mockito, Testcontainers, JaCoCo ≥ 80% em domain/application, Vitest | ✅ backend: 94 testes, domain+application 99,7% de linhas e 89,3% de ramos. Frontend: 63 testes (Vitest + Vue Test Utils), 94,6% de linhas e 81,7% de ramos nas telas críticas (formulário, lista/detalhe, cadastros, guarda de rota, login e telas do porte) |
+| JUnit 5, Mockito, Testcontainers, JaCoCo ≥ 80% em domain/application, Vitest | ✅ backend: 101 testes, gate do JaCoCo (80% linhas / 70% ramos em domain+application) passando. Frontend: 70 testes (Vitest + Vue Test Utils), 94,6% de linhas e 81,7% de ramos nas telas críticas (formulário, lista/detalhe, cadastros, guarda de rota, login e telas do porte) |
 | Clean Architecture, README em pt-BR | ✅ |
 | Relatório de segurança (OWASP Dependency-Check) | ✅ configurado, veja [SEGURANCA.md](SEGURANCA.md) |
 | **Extra:** PWA instalável + Web Push (novo, cancelado, capacidade excedida, chegada, divergência) | ✅ |
@@ -37,7 +37,8 @@ docker compose up --build
 | **Extra:** Preenchimento pelo ID do pedido via ERP (Bluesoft pronto, desligado) | ✅ [INTEGRACAO-BLUESOFT.md](INTEGRACAO-BLUESOFT.md) |
 | **Extra:** Remarcação pelo fornecedor (só com vaga) e pelo CD, multi-CD, fornecedores, produtos/pesos, XML da NF-e, divergências com CSV, tempos de descarga, rotina do dia | ✅ |
 | **Extra:** Conta-corrente de paletes, cobrança com recibo, romaneios e saldo por loja | ✅ |
-| **Extra:** Tipos de palete configuráveis (CRUD ADMIN, semente PBR/CHEP/Chapatex/Descartável) | ✅ |
+| **Extra:** Gestão de acessos no padrão do Gestão CD: usuários, perfis, permissões numeradas 1001+, botão Permissões em cada tela, troca de senha provisória e logs de acesso | ✅ |
+| **Extra:** Tipos de palete configuráveis (CRUD do Administrador, semente PBR/CHEP/Chapatex/Descartável) | ✅ |
 | **Extra:** E-mail da cobrança/recibo de paletes (Mailpit), com histórico de envios | ✅ |
 | **Extra:** WhatsApp como canal plugável: link `wa.me` com mensagem pronta; adaptador da API do WhatsApp Business pronto e desligado | ✅ |
 | **Extra:** Conferentes por CD | ✅ |
@@ -73,7 +74,9 @@ docker compose up --build
 ## Segurança
 
 - JWT HS256 (segredo por variável), sessão stateless, senhas com BCrypt.
-- Perfil validado no backend (`@PreAuthorize` + regras por URL). USUARIO recebe 403 em qualquer escrita.
+- Permissões numeradas validadas no backend: o filtro JWT carrega do banco as permissões do perfil a cada requisição e `RegrasAcesso` liga cada rota de escrita a um número; rota de escrita fora da tabela é negada. Perfil sem o número recebe 403.
+- Senha provisória obrigatória no primeiro acesso e após redefinição (só `/auth` responde até a troca). Senha com 8+ caracteres, letras e números.
+- Logs de acesso com IP e navegador: entrada, saída, senha recusada e troca de senha.
 - Login auditado com sucesso e falha. Na falha o hash fictício é comparado mesmo assim, para não revelar se o usuário existe pelo tempo de resposta.
 - Bean Validation em todas as entradas. Erros voltam padronizados, sem stack trace.
 - CORS restrito, cabeçalhos de segurança (CSP, X-Frame-Options, nosniff) na API e no nginx.
@@ -85,4 +88,4 @@ docker compose up --build
 
 Em [docs/prints](prints), versões desktop e celular com o compose no ar: login, início/dashboard, novo agendamento (já preenchido pelo ERP), lista, detalhe com portaria, ocupação da semana, relatório, vale-palete (lista e impressão), cadastros, auditoria, página pública do fornecedor, Swagger, e-mail no Mailpit (com o logo), rotina do dia, divergências, tempos de descarga, conta-corrente, cobranças, recibo, paletes nas lojas, fornecedores, CDs, produtos/pesos, parâmetros de descarga, NF-e no detalhe, menu completo e o fornecedor remarcando (01–30, 27/10/2026).
 
-Novas em 29/10/2026 (horário de Brasília): 31 tipos de palete + configurações do vale, 32 conferentes, 33 cobrança por e-mail/WhatsApp, 34 pátio e docas, 35 capacidade por CD e loja ("Está cheio?"), 36 cadastro de docas, 37 taxa de descarga por modal, 38 produto avulso no detalhe, 39 novo agendamento com entrega na loja e % de capacidade, 40 conta-corrente por transportadora.
+Novas em 29/10/2026 (horário de Brasília): 31 tipos de palete + configurações do vale, 32 conferentes, 33 cobrança por e-mail/WhatsApp, 34 pátio e docas, 35 capacidade por CD e loja ("Está cheio?"), 36 cadastro de docas, 37 taxa de descarga por modal, 38 produto avulso no detalhe, 39 novo agendamento com entrega na loja e % de capacidade, 40 conta-corrente por transportadora. Gestão de acessos (41–47, 30/10/2026): usuários com pílulas e último acesso, menu ⋮, modal de novo usuário, perfis com permissões numeradas, botão Permissões, logs de acesso e troca de senha.

@@ -2,7 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '../api'
-import { isAdmin } from '../sessao'
+import { pode } from '../sessao'
 import { deIso, fmtData, hoje, isoData, somarDias } from '../utils'
 import { useNotificar } from '../composables/useNotificar'
 
@@ -46,7 +46,7 @@ onMounted(buscar)
     <h1>Vale-palete</h1>
     <div class="acoes">
       <form class="busca-codigo" @submit.prevent="porCodigo"><InputText v-model="codigo" placeholder="VP-AAAAMMDD-0001" aria-label="Código do vale" /><Button type="submit" icon="pi pi-search" class="btn-secundario" aria-label="Abrir vale" /></form>
-      <Button v-if="isAdmin" label="Novo vale" icon="pi pi-plus" class="btn-confirmar" @click="router.push('/vales-palete/novo')" />
+      <Button v-if="pode(1302)" label="Novo vale" icon="pi pi-plus" class="btn-confirmar" @click="router.push('/vales-palete/novo')" />
     </div>
   </div>
   <form class="painel filtros" @submit.prevent="buscar">

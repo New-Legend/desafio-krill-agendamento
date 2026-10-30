@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,13 +37,11 @@ public class ConferenteController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
     public Conferente criar(@Valid @RequestBody Requisicoes.Conferente b, HttpServletRequest req) {
         return useCase.salvar(null, new ConferenteUseCase.Dados(b.cdId(), b.nome(), b.ativo()), Requisicao.solicitante(req));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public Conferente atualizar(@PathVariable Long id, @Valid @RequestBody Requisicoes.Conferente b, HttpServletRequest req) {
         return useCase.salvar(id, new ConferenteUseCase.Dados(b.cdId(), b.nome(), b.ativo()), Requisicao.solicitante(req));
     }
