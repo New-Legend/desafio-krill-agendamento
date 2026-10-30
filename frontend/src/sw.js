@@ -14,7 +14,7 @@ registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), {
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
 
 self.addEventListener('push', (event) => {
-  let dados = { title: 'Agendamento de Recebimento', body: '', url: '/painel' }
+  let dados = { title: 'Agendamento Rede Krill', body: '', url: '/painel' }
   try {
     dados = { ...dados, ...event.data.json() }
   } catch {

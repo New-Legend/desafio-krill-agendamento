@@ -61,7 +61,7 @@ async function sair() {
       <button class="btn-topo btn-hamburguer" aria-label="Abrir menu" @click="menuAberto = true"><i class="pi pi-bars" /></button>
       <RouterLink to="/inicio" class="marca">
         <img src="/img/rede-krill-logo.png" alt="Rede Krill" width="570" height="528" />
-        <span>Gestão CD <small>· Recebimento</small></span>
+        <span>Agendamento Rede Krill</span>
       </RouterLink>
       <nav class="menu">
         <RouterLink v-for="i in itens[0]?.itens || []" :key="i.to" :to="i.to">{{ i.label }}</RouterLink>

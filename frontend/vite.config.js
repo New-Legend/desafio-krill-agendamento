@@ -14,8 +14,8 @@ export default defineConfig({
       devOptions: { enabled: false },
       injectManifest: { globPatterns: ['**/*.{js,css,html,png,svg,woff,woff2,ttf,eot}'] },
       manifest: {
-        name: 'Agendamento de Recebimento — Rede Krill',
-        short_name: 'Agendamento CD',
+        name: 'Agendamento Rede Krill',
+        short_name: 'Agendamento Krill',
         description: 'Agendamento de caminhões e ocupação do recebimento',
         lang: 'pt-BR',
         start_url: '/painel',

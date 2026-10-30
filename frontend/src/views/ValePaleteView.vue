@@ -163,7 +163,7 @@ onMounted(carregar)
 
     <article class="painel vale-impressao">
       <header class="vale-topo">
-        <div class="vale-marca"><img src="/img/rede-krill-logo.png" alt="Rede Krill" width="570" height="528" /><div><strong>Rede Krill · Centro de Distribuição</strong><small>Vale-palete</small></div></div>
+        <div class="vale-marca"><img src="/img/rede-krill-logo.png" alt="Rede Krill" width="570" height="528" /><div><strong>Agendamento Rede Krill</strong><small>Vale-palete · Centro de Distribuição</small></div></div>
         <div class="vale-codigo"><strong>{{ vale.codigo }}</strong><Tag :value="STATUS[vale.status][0]" :severity="STATUS[vale.status][1]" /></div>
       </header>
       <dl class="detalhes">

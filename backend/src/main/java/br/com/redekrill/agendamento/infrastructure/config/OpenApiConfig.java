@@ -13,7 +13,7 @@ public class OpenApiConfig {
     @Bean
     OpenAPI openAPI() {
         return new OpenAPI()
-                .info(new Info().title("Agendamento de Recebimento — Rede Krill").version("1.0.0")
+                .info(new Info().title("Agendamento Rede Krill").version("1.0.0")
                         .description("API REST de agendamento de caminhões, ocupação por dia/faixa, cadastros e auditoria."))
                 .components(new Components().addSecuritySchemes("bearer",
                         new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))

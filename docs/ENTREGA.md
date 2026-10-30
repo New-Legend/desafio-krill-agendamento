@@ -1,4 +1,4 @@
-# Entrega — Teste técnico Rede Krill (Agendamento de Recebimento)
+# Entrega — Teste técnico Rede Krill (Agendamento Rede Krill)
 
 - **Repositório:** `<link do repositório a preencher>`
 - **Prazo:** 04/11/2026

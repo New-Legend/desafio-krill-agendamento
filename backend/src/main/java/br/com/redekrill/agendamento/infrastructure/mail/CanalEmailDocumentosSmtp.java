@@ -34,7 +34,7 @@ public class CanalEmailDocumentosSmtp implements CanalEmailDocumentos {
         try {
             MimeMessage msg = sender.createMimeMessage();
             MimeMessageHelper h = new MimeMessageHelper(msg, true, StandardCharsets.UTF_8.name());
-            h.setFrom(remetente);
+            h.setFrom(remetente, "Agendamento Rede Krill");
             h.setTo(para);
             h.setSubject(assunto);
             h.setText(texto, html);

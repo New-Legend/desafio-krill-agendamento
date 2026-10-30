@@ -1,6 +1,6 @@
 # Porte do recebimento do Gestão CD
 
-O Gestão CD (Cloudflare Worker + D1, TypeScript) já tem o módulo de recebimento usado no CD. Este projeto reaproveita as **regras, telas e fluxos** dele, reescritos em Java/Spring e Vue, no padrão pedido pelo teste. Não há código copiado: o stack é outro, então cada parte foi reimplementada com testes.
+O Gestão CD (Cloudflare Worker + D1, TypeScript) é o sistema de origem: já tem o módulo de recebimento usado no CD. O **Agendamento Rede Krill** (este projeto) reaproveita as **regras, telas e fluxos** dele, reescritos em Java/Spring e Vue, no padrão pedido pelo teste. Não há código copiado: o stack é outro, então cada parte foi reimplementada com testes.
 
 Legenda: ✅ portado · 🟡 portado em parte / adaptado · ⏳ pendente · 🔮 futuro (fora do escopo desta entrega)
 

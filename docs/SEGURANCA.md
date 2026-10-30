@@ -1,4 +1,4 @@
-# Relatório de segurança das dependências
+# Relatório de segurança das dependências — Agendamento Rede Krill
 
 Análise de 27/10/2026 (horário de Brasília).
 

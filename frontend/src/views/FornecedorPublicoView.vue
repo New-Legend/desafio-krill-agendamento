@@ -85,7 +85,7 @@ defineExpose({ abrirRemarcar, remarcar, escolha })
   <div class="publico">
     <header class="publico-topo">
       <img src="/img/rede-krill-logo.png" alt="Rede Krill" width="570" height="528" />
-      <div><strong>Rede Krill</strong><small>Agendamento de entrega</small></div>
+      <div><strong>Agendamento Rede Krill</strong><small>Sua entrega no CD</small></div>
     </header>
 
     <div v-if="erro" class="painel vazio">{{ erro }}</div>

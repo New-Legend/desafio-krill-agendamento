@@ -35,7 +35,7 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
     @Override
     public void enviarConfirmacao(AgendamentoDetalhe d, String linkFornecedor) {
         Agendamento a = d.agendamento();
-        enviar(a.getEmailFornecedor(), "Agendamento de entrega confirmado — Pedido " + a.getIdPedido(),
+        enviar(a.getEmailFornecedor(), "Agendamento de entrega confirmado — Pedido " + a.getIdPedido() + " · Agendamento Rede Krill",
                 "Agendamento de entrega confirmado", d, "#148a42", linkFornecedor);
     }
 
@@ -43,7 +43,7 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
     @Override
     public void enviarCancelamento(AgendamentoDetalhe d) {
         Agendamento a = d.agendamento();
-        enviar(a.getEmailFornecedor(), "Agendamento de entrega cancelado — Pedido " + a.getIdPedido(),
+        enviar(a.getEmailFornecedor(), "Agendamento de entrega cancelado — Pedido " + a.getIdPedido() + " · Agendamento Rede Krill",
                 "Agendamento de entrega cancelado", d, "#dc2626", null);
     }
 
@@ -51,7 +51,7 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
         try {
             MimeMessage msg = sender.createMimeMessage();
             MimeMessageHelper h = new MimeMessageHelper(msg, true, StandardCharsets.UTF_8.name());
-            h.setFrom(remetente);
+            h.setFrom(remetente, "Agendamento Rede Krill");
             h.setTo(para);
             h.setSubject(assunto);
             h.setText(html(titulo, d, cor, link), true);
@@ -70,7 +70,7 @@ public class NotificadorEmailSmtp implements NotificadorEmail {
                 .append("<div style=\"background:#1e3a8a;height:6px;border-bottom:3px solid #1d4ed8\"></div>")
                 .append("<img src=\"cid:logo\" alt=\"Rede Krill\" width=\"90\" height=\"83\" style=\"display:block;border:0\">")
                 .append("<h2 style=\"color:").append(cor).append(";font-size:18px\">").append(titulo).append("</h2>")
-                .append("<p>Rede Krill — Recebimento</p>")
+                .append("<p>Agendamento Rede Krill</p>")
                 .append("<table cellpadding=\"6\" style=\"border-collapse:collapse;border:1px solid #e2e8f0\">");
         linha(sb, "Agendamento", "#" + a.getId());
         linha(sb, "Data", a.getData().format(BR));

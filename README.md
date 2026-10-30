@@ -1,6 +1,6 @@
-# Agendamento de Recebimento — Rede Krill
+# Agendamento Rede Krill
 
-Sistema web para agendar a entrega de caminhões no recebimento do CD, controlando a capacidade de paletes por dia e por faixa horária.
+Sistema web para agendar a entrega de caminhões no recebimento do CD, controlando a capacidade de paletes por dia e por faixa horária. Regras, telas e visual vêm do **Gestão CD**, o sistema de referência da Rede Krill (veja [docs/PORTE-GESTAO-CD.md](docs/PORTE-GESTAO-CD.md)).
 
 - **Backend:** Java 17+, Spring Boot 3.5 (Web, Validation, Data JPA, Security com JWT, Flyway), PostgreSQL 16, Swagger (springdoc), e-mail SMTP, Web Push (VAPID).
 - **Frontend:** Vue 3 + Vite + PrimeVue, PWA instalável (manifest, service worker, tela offline, notificações push).

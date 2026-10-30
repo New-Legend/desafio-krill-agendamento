@@ -171,12 +171,12 @@ public class NotificacaoUseCase {
         if (c.getStatus() == CobrancaPalete.Status.PAGA) {
             return "Olá, " + c.getFornecedor() + ". Recebemos o pagamento da cobrança de paletes nº " + c.getId()
                     + " (" + c.getQuantidade() + " paletes, " + moeda(c.valorTotal()) + "). Recibo " + c.getReciboNumero()
-                    + ". Rede Krill — Recebimento.";
+                    + ". Agendamento Rede Krill.";
         }
         return "Olá, " + c.getFornecedor() + ". A Rede Krill registrou a cobrança de paletes nº " + c.getId() + ": "
                 + c.getQuantidade() + " paletes não devolvidos × " + moeda(c.getValorUnitario()) + " = " + moeda(c.valorTotal())
                 + ", vencimento " + c.getVencimento().format(BR) + ". Para quitar, devolva os paletes no CD ou combine o "
-                + "pagamento com o recebimento. Rede Krill — Recebimento.";
+                + "pagamento com o recebimento. Agendamento Rede Krill.";
     }
 
     static String textoAgendamento(AgendamentoDetalhe d) {
@@ -190,7 +190,7 @@ public class NotificacaoUseCase {
     static EmailDocumento montarEmail(CobrancaPalete c) {
         boolean paga = c.getStatus() == CobrancaPalete.Status.PAGA;
         String assunto = (paga ? "Recibo " + c.getReciboNumero() + " — " : "Cobrança de paletes nº " + c.getId() + " — ")
-                + c.getFornecedor() + " · Rede Krill";
+                + c.getFornecedor() + " · Agendamento Rede Krill";
         String titulo = paga ? "Recibo de paletes" : "Cobrança de paletes não devolvidos";
         String cor = paga ? "#148a42" : "#ea580c";
         StringBuilder h = new StringBuilder();
@@ -216,7 +216,7 @@ public class NotificacaoUseCase {
         if (c.getObservacao() != null) linha(h, "Observação", c.getObservacao());
         h.append("</table><p style=\"color:#64748b;font-size:12px\">")
                 .append(paga ? "Guarde este e-mail como comprovante." : "Para quitar, devolva os paletes no CD ou combine o pagamento com o recebimento.")
-                .append("</p><p style=\"color:#64748b;font-size:12px\">Rede Krill — Recebimento</p></div>");
+                .append("</p><p style=\"color:#64748b;font-size:12px\">Agendamento Rede Krill</p></div>");
         return new EmailDocumento(assunto, h.toString(), textoCobranca(c));
     }
 

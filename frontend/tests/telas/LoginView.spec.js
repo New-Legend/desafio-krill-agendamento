@@ -9,6 +9,7 @@ describe('LoginView', () => {
   it('exige usuário e senha', async () => {
     simularApi({})
     const { w } = await montar(LoginView)
+    expect(w.find('h1').text()).toBe('Agendamento Rede Krill')
     await w.find('form').trigger('submit')
     expect(w.text()).toContain('Informe usuário e senha')
   })

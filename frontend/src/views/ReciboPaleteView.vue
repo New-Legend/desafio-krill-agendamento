@@ -34,7 +34,7 @@ function imprimir() {
   <div v-if="c && !c.reciboNumero" class="painel vazio">Cobrança #{{ c.id }} ainda não foi paga — o recibo é emitido no recebimento.</div>
   <article v-else-if="c" class="painel recibo">
     <header class="recibo-topo">
-      <div class="recibo-marca"><img src="/img/rede-krill-logo.png" alt="Rede Krill" width="570" height="528" /><div><strong>Rede Krill · Centro de Distribuição</strong><small>Recibo de pagamento de paletes</small></div></div>
+      <div class="recibo-marca"><img src="/img/rede-krill-logo.png" alt="Rede Krill" width="570" height="528" /><div><strong>Agendamento Rede Krill</strong><small>Recibo de pagamento de paletes</small></div></div>
       <div class="numero"><strong>{{ c.reciboNumero }}</strong><small>{{ fmtDataHora(c.pagoEm) }}</small></div>
     </header>
     <p class="texto">
@@ -48,7 +48,7 @@ function imprimir() {
       <template v-if="c.observacao"><dt>Observação</dt><dd>{{ c.observacao }}</dd></template>
     </dl>
     <p class="texto-suave legal">Com este pagamento, o saldo de paletes do fornecedor é baixado na mesma quantidade.</p>
-    <div class="assinatura"><div class="linha" /><span>Rede Krill · Recebimento</span></div>
+    <div class="assinatura"><div class="linha" /><span>Agendamento Rede Krill · Recebimento</span></div>
   </article>
 </template>
 

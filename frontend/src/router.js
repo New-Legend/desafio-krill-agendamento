@@ -63,5 +63,5 @@ export function guarda(to) {
 router.beforeEach(guarda)
 
 router.afterEach((to) => {
-  document.title = `${to.meta.titulo || 'Agendamento'} — Rede Krill`
+  document.title = to.meta.titulo ? `${to.meta.titulo} — Agendamento Rede Krill` : 'Agendamento Rede Krill'
 })

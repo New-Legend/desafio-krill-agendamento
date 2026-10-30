@@ -44,7 +44,7 @@ onUnmounted(() => clearInterval(timer))
 <template>
   <section class="central-cabecalho">
     <span class="eyebrow">Central de operações</span>
-    <h1>Gestão CD</h1>
+    <h1>Agendamento Rede Krill</h1>
     <p>Escolha uma rotina para trabalhar{{ sessao.atual?.nome ? `, ${sessao.atual.nome.split(' ')[0]}` : '' }}.</p>
   </section>
 

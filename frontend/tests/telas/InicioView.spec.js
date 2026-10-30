@@ -3,13 +3,14 @@ import { erroHttp, logar, montar, sair, simularApi, PERMISSOES } from '../montar
 import InicioView from '../../src/views/InicioView.vue'
 import { menuItens } from '../../src/menu'
 
-describe('InicioView (centrais do Gestão CD)', () => {
+describe('InicioView (centrais no padrão do Gestão CD)', () => {
   afterEach(sair)
 
   it('admin vê as cinco centrais em acordeão', async () => {
     logar('ADMIN')
     simularApi({ 'GET /dashboard': erroHttp(500, 'fora') })
     const { w } = await montar(InicioView)
+    expect(w.find('h1').text()).toBe('Agendamento Rede Krill')
     const cards = w.findAll('.central-card')
     expect(cards.map((c) => c.find('.eyebrow').text())).toEqual(['OPE', 'REC', 'PAL', 'CAD', 'ADM'])
     expect(w.find('.central-links').exists()).toBe(false)

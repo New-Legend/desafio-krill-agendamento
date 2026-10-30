@@ -32,8 +32,8 @@ function entrar() {
   <div class="login">
     <form class="login-cartao" @submit.prevent="entrar">
       <img src="/img/rede-krill-logo.png" alt="Rede Krill Supermercados" width="570" height="528" />
-      <h1>Agendamento de Recebimento</h1>
-      <p>Rede Krill · Centro de Distribuição</p>
+      <h1>Agendamento Rede Krill</h1>
+      <p>Recebimento do Centro de Distribuição</p>
       <div class="campo">
         <label for="usuario">Usuário</label>
         <InputText id="usuario" v-model="form.usuario" autocomplete="username" autofocus />

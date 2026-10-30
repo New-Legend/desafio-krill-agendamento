@@ -4,7 +4,7 @@
 
 | Tempo | O que mostrar | O que falar |
 |---|---|---|
-| 0:00–1:00 | Tela de início | "Este é o sistema de agendamento do recebimento. Ele controla quantos paletes chegam por dia e por faixa, avisa quando passa do limite e acompanha o caminhão até o fim da conferência." |
+| 0:00–1:00 | Tela de início | "Este é o Agendamento Rede Krill, o sistema de agendamento do recebimento. Ele controla quantos paletes chegam por dia e por faixa, avisa quando passa do limite e acompanha o caminhão até o fim da conferência." |
 | 1:00–2:00 | Terminal com `docker compose up --build` | "Um comando sobe tudo: banco, API, tela e uma caixa de e-mail de teste." |
 | 2:00–3:30 | Login como admin, Início | Ocupação do dia contra 480, as 4 faixas contra 120 (a vermelha estourou), próximos caminhões, status e alertas. |
 | 3:30–5:30 | Novo agendamento | Digitar o pedido 450002: os dados vêm do ERP. Trocar para não paletizado: a ocupação dobra na hora. Escolher uma faixa cheia: aparece o alerta, mas salva. |
@@ -77,3 +77,4 @@
 54. **O que vai para o log de acesso?** Entrada, saída, senha recusada e troca de senha, com login, IP e User-Agent (a tela resume como "Chrome · Windows"). As ações continuam na auditoria.
 55. **Por que não tem um nível acima do administrador?** O código é público. Um nível escondido seria um risco e não faz parte do teste; o Administrador é um perfil comum com todos os números.
 56. **Como a notificação push respeita o perfil?** O envio filtra as inscrições de usuários ativos cujo perfil tem 1102 (Agendamentos: consultar). O Gestão CD ainda filtra por CD e usa fila com deduplicação; isso ficou listado como próximo passo.
+57. **Por que o nome Agendamento Rede Krill e não Gestão CD?** O Gestão CD é o sistema de referência de onde vieram as regras e o visual. Este é um produto separado, focado no agendamento do recebimento, então leva nome próprio; as menções ao Gestão CD nos documentos indicam a origem de cada regra.
